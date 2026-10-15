@@ -48,7 +48,7 @@ public class ResourceService {
         String ext = StringUtils.getFilenameExtension(originalName);
         String uuidName = UUID.randomUUID().toString().replace("-", "") + (ext != null ? "." + ext : "");
         String relativeDir = courseId + File.separator;
-        File dir = new File(uploadDir, relativeDir);
+        File dir = new File(uploadDir, relativeDir).getAbsoluteFile();
         if (!dir.exists()) {
             dir.mkdirs();
         }

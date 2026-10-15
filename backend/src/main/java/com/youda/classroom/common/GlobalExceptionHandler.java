@@ -1,6 +1,7 @@
 package com.youda.classroom.common;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -31,6 +32,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Result<Void> handleUploadSizeException(MaxUploadSizeExceededException e) {
         return Result.fail(ResultCode.BAD_REQUEST, "上传文件超过大小限制");
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Result<Void> handleMessageNotReadable(HttpMessageNotReadableException e) {
+        return Result.fail(ResultCode.BAD_REQUEST, "请求体格式错误");
     }
 
     @ExceptionHandler(Exception.class)
