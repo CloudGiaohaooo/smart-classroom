@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   server: {
+    host: true,
     port: 5173,
     // 开发环境代理：前端请求 /api、/files 转发到后端 8080，避免跨域
     proxy: {
