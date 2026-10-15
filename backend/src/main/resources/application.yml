@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: smart-classroom
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # createDatabaseIfNotExist=true：首次启动自动创建数据库 youda_classroom
+    url: jdbc:mysql://localhost:3306/youda_classroom?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  sql:
+    init:
+      # 每次启动执行 schema.sql（表结构使用 IF NOT EXISTS，幂等，不会破坏已有数据）
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:db/schema.sql
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # 开发期打印 SQL，答辩演示时便于观察多表查询与事务；生产可关闭
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+# JWT 配置（密钥长度需 >= 32 字节，HS256）
+jwt:
+  secret: YouDaSmartClassroom2026SecretKey@CQUPT-cyberspace-security
+  expire-minutes: 720
+
+# 文件上传目录与访问前缀
+file:
+  upload-dir: ./uploads
+  access-prefix: /files

@@ -1,0 +1,19 @@
+# ---- 后端 ----
+backend/target/
+backend/uploads/
+*.class
+
+# ---- 前端 ----
+frontend/node_modules/
+frontend/dist/
+
+# ---- IDE / 系统 ----
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# ---- 答辩材料原版备份（含真实姓名/学号，仅本地保留，不入库） ----
+答辩材料-原版备份/

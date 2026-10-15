@@ -1,0 +1,129 @@
+# 优达智慧课堂教学管理平台
+
+> 一个前后端分离的在线教学管理平台，覆盖课程管理、作业发布与提交、作业批阅反馈、课程资源上传四大核心模块。
+> 本项目作为软件开发实习的答辩项目，也适合作为考研复试 / 求职的作品展示。
+
+## 一、项目简介
+
+本系统面向高校教师与学生，提供：
+
+| 模块 | 功能 | 对应实习工作 |
+| --- | --- | --- |
+| 课程管理 | 课程的新增、编辑、删除、分页查询、关键词搜索 | 前端「课程管理」页面开发 |
+| 作业列表 | 作业的布置、编辑、删除、分页查询、课程筛选 | 前端「作业列表」页面开发 |
+| 作业批阅反馈 | 学生提交作业、教师打分并填写反馈 | 后端「作业批阅反馈」接口开发 |
+| 课程资源上传 | 资源文件上传、下载、分页查询、删除 | 后端「课程资源上传」接口开发 |
+
+## 二、技术栈
+
+| 层级 | 技术 |
+| --- | --- |
+| 前端 | Vue 3、Vite、Element Plus、Vue Router、Pinia、Axios、ECharts |
+| 后端 | Spring Boot 3.2、MyBatis-Plus、MySQL 8 |
+| 安全 | JWT 令牌认证、BCrypt 密码加密、拦截器权限校验 |
+| 其他 | RESTful API 设计、统一响应/异常处理、事务管理、文件上传 |
+
+## 三、系统架构
+
+```
+浏览器（Vue3 SPA）
+      │  HTTP / JSON（RESTful）
+      ▼
+Spring Boot 后端
+  ├─ Controller 层：接收请求、参数校验、返回统一 Result
+  ├─ Service 层：业务逻辑、@Transactional 事务控制
+  ├─ Mapper 层：MyBatis-Plus BaseMapper + 自定义 SQL（多表 JOIN）
+  └─ MySQL 数据库（sys_user / course / assignment / submission / course_resource）
+```
+
+安全链路：登录 → 后端校验账号密码（BCrypt 比对）→ 签发 JWT → 前端每次请求携带 `Authorization: Bearer <token>` → 后端 `JwtInterceptor` 解析并写入 `ThreadLocal` 用户上下文。
+
+## 四、目录结构
+
+```
+优达智慧课堂教学管理平台
+├─ backend/                     # 后端（Spring Boot）
+│  ├─ pom.xml
+│  └─ src/main/
+│     ├─ java/com/youda/classroom/
+│     │  ├─ controller/         # 接口层
+│     │  ├─ service/            # 业务层
+│     │  ├─ mapper/             # 数据访问层（含多表 JOIN SQL）
+│     │  ├─ entity/ dto/ vo/    # 实体 / 入参 / 出参
+│     │  ├─ security/           # JWT 工具、拦截器、用户上下文
+│     │  ├─ config/             # 配置类、演示数据初始化
+│     │  └─ common/             # 统一响应、异常、状态码
+│     └─ resources/
+│        ├─ application.yml
+│        └─ db/schema.sql       # 建表脚本
+├─ frontend/                    # 前端（Vue3 + Vite）
+│  └─ src/
+│     ├─ views/                 # 页面
+│     ├─ layout/                # 布局
+│     ├─ router/ store/ utils/ api/   # 路由、状态、请求封装、接口
+│     └─ main.js App.vue
+├─ docs/                        # 设计文档（数据库 / 接口 / 架构）
+└─ 答辩材料/                     # PPT 大纲、问答、演示讲解稿
+```
+
+## 五、快速启动
+
+### 1. 环境准备
+
+- JDK 17+
+- Maven 3.6+
+- MySQL 8.x（默认账号 `root` / `root`，如不同请修改 `backend/src/main/resources/application.yml`）
+- Node.js 18+（前端）
+
+### 2. 启动后端
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+首次启动会自动完成三件事：
+1. 自动创建数据库 `youda_classroom`（JDBC URL 中的 `createDatabaseIfNotExist=true`）；
+2. 自动执行 `db/schema.sql` 建表（`IF NOT EXISTS`，幂等）；
+3. 自动写入演示数据（`DataInitializer`）。
+
+启动成功后，后端监听 `http://localhost:8080`。
+
+### 3. 启动前端
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+访问 `http://localhost:5173`，使用以下演示账号登录（密码均为 `123456`）：
+
+| 账号 | 角色 | 权限 |
+| --- | --- | --- |
+| admin | 管理员 | 全部功能 |
+| teacher | 教师 | 课程管理、布置作业、批阅、上传资源 |
+| student | 学生 | 查看课程/作业/资源、提交作业、查看我的提交 |
+
+### 4. 常见问题
+
+- **端口占用**：修改 `application.yml` 的 `server.port`，同步修改 `vite.config.js` 的代理 target。
+- **数据库连接失败**：确认 MySQL 已启动、账号密码正确。
+- **Maven 下载慢**：可配置阿里云镜像仓库。
+
+## 六、核心亮点（答辩 / 复试可重点讲解）
+
+1. **前后端分离 + RESTful 设计**：资源化 URL、HTTP 方法语义、统一 `Result` 响应体。
+2. **多表查询**：课程联表查教师名、作业联表统计提交数、提交记录四表 JOIN，演示 `LEFT JOIN` 与聚合子查询。
+3. **事务管理**：作业批阅使用 `@Transactional`，保证得分/反馈/状态/时间原子更新，可深入讲事务隔离级别。
+4. **JWT 无状态认证**：令牌生成/解析、拦截器鉴权、`ThreadLocal` 上下文，体现网络安全专业背景。
+5. **文件上传**：本地落盘 + 数据库元数据、按课程分目录、唯一文件名避免覆盖。
+6. **统一异常处理**：`@RestControllerAdvice` 全局兜底，业务异常/参数校验/系统异常分类处理。
+
+## 七、后续可扩展方向
+
+- 引入 Spring Security 完整过滤链 + RBAC 权限模型
+- 分片/对象存储（OSS）替代本地文件存储
+- 消息队列实现批阅结果异步通知
+- 引入 Redis 缓存热点数据、限流
+- 接口文档自动生成（Knife4j / SpringDoc）
