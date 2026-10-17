@@ -37,6 +37,7 @@ public class ResourceService {
 
     private final CourseResourceMapper resourceMapper;
     private final RedisCacheService cacheService;
+    private final CourseOwnershipGuard ownershipGuard;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -58,6 +59,8 @@ public class ResourceService {
      * 仅新增一条元数据记录；否则落盘并记录 MD5。
      */
     public ResourceUploadVO upload(Long courseId, String resourceType, MultipartFile file) {
+        // P0-B：只能往自己有操作权的课程上传资源（教师仅本人课程、管理员全量）
+        ownershipGuard.assertCourseOwned(courseId);
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "上传文件不能为空");
         }
@@ -147,6 +150,8 @@ public class ResourceService {
         if (resource == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "资源不存在");
         }
+        // P0-B：仅管理员或该资源所属课程的授课教师可删除
+        ownershipGuard.assertCourseOwned(resource.getCourseId());
         resourceMapper.deleteById(id);
         cacheService.evict(StatsService.STATS_CACHE_KEY);
         if (StringUtils.hasText(resource.getFileUrl())) {

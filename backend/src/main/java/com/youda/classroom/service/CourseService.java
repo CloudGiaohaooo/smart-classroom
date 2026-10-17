@@ -14,9 +14,9 @@ import com.youda.classroom.entity.CourseResource;
 import com.youda.classroom.mapper.AssignmentMapper;
 import com.youda.classroom.mapper.CourseMapper;
 import com.youda.classroom.mapper.CourseResourceMapper;
+import com.youda.classroom.security.UserContext;
 import com.youda.classroom.vo.CourseVO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +36,7 @@ public class CourseService {
     private final AssignmentMapper assignmentMapper;
     private final CourseResourceMapper resourceMapper;
     private final RedisCacheService cacheService;
+    private final CourseOwnershipGuard ownershipGuard;
 
     @Value("${cache.course-list-ttl}")
     private long courseListTtl;
@@ -58,8 +59,14 @@ public class CourseService {
 
     public void create(CourseDTO dto) {
         Course course = new Course();
-        BeanUtils.copyProperties(dto, course);
+        course.setCourseName(dto.getCourseName());
+        course.setCourseCode(dto.getCourseCode());
+        course.setDescription(dto.getDescription());
+        course.setCredit(dto.getCredit());
+        course.setSemester(dto.getSemester());
         course.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
+        // P0-B：授课教师归属——非管理员只能为自己建课，防止教师代建他人课程；管理员可代建（沿用 DTO 的 teacherId）
+        course.setTeacherId("ADMIN".equals(UserContext.getRole()) ? dto.getTeacherId() : UserContext.getUserId());
         courseMapper.insert(course);
         cacheService.evict(COURSE_LIST_CACHE_KEY);
         cacheService.evict(StatsService.STATS_CACHE_KEY);
@@ -70,13 +77,41 @@ public class CourseService {
         if (course == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "课程不存在");
         }
-        BeanUtils.copyProperties(dto, course);
+        // P0-B：仅管理员或该课程的授课教师可修改
+        ownershipGuard.assertCourseOwned(course);
+        // 显式字段拷贝，未传的可选字段不覆盖（修复 BeanUtils 全量拷贝把未传字段清空的问题）
+        course.setCourseName(dto.getCourseName());
+        if (dto.getCourseCode() != null) {
+            course.setCourseCode(dto.getCourseCode());
+        }
+        if (dto.getDescription() != null) {
+            course.setDescription(dto.getDescription());
+        }
+        if (dto.getCredit() != null) {
+            course.setCredit(dto.getCredit());
+        }
+        if (dto.getSemester() != null) {
+            course.setSemester(dto.getSemester());
+        }
+        if (dto.getStatus() != null) {
+            course.setStatus(dto.getStatus());
+        }
+        // 课程归属仅管理员可变更，且需显式传入 teacherId
+        if ("ADMIN".equals(UserContext.getRole()) && dto.getTeacherId() != null) {
+            course.setTeacherId(dto.getTeacherId());
+        }
         courseMapper.updateById(course);
         cacheService.evict(COURSE_LIST_CACHE_KEY);
         cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
     public void delete(Long id) {
+        Course course = courseMapper.selectById(id);
+        if (course == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "课程不存在");
+        }
+        // P0-B：仅管理员或该课程的授课教师可删除
+        ownershipGuard.assertCourseOwned(course);
         Long assignmentCount = assignmentMapper.selectCount(
                 new LambdaQueryWrapper<Assignment>().eq(Assignment::getCourseId, id));
         Long resourceCount = resourceMapper.selectCount(

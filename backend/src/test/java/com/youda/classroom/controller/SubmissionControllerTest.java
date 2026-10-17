@@ -23,6 +23,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -134,5 +138,17 @@ class SubmissionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("提交成功"));
+    }
+
+    @Test
+    void studentQueryingPageIsForcedToOwnStudentId() throws Exception {
+        // P0-A：学生查询提交列表时，无论是否传 studentId，都被强制为本人 id=2（防止读全站）
+        mockMvc.perform(get("/api/submissions")
+                        .param("size", "100")
+                        .header("Authorization", bearer(2L, "student", "STUDENT")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+
+        verify(submissionService).page(anyLong(), anyLong(), isNull(), eq(2L), isNull());
     }
 }

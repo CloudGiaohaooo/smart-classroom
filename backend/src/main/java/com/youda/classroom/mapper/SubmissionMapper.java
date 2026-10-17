@@ -28,6 +28,7 @@ public interface SubmissionMapper extends BaseMapper<Submission> {
             "<where>" +
             "  <if test='assignmentId != null'> AND s.assignment_id = #{assignmentId} </if>" +
             "  <if test='studentId != null'> AND s.student_id = #{studentId} </if>" +
+            "  <if test='teacherId != null'> AND c.teacher_id = #{teacherId} </if>" +
             "  <if test='status != null and status != \"\"'> AND s.status = #{status} </if>" +
             "</where>" +
             "ORDER BY s.id DESC" +
@@ -35,5 +36,6 @@ public interface SubmissionMapper extends BaseMapper<Submission> {
     IPage<SubmissionVO> selectSubmissionPage(Page<?> page,
                                              @Param("assignmentId") Long assignmentId,
                                              @Param("studentId") Long studentId,
-                                             @Param("status") String status);
+                                             @Param("status") String status,
+                                             @Param("teacherId") Long teacherId);
 }

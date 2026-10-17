@@ -30,6 +30,7 @@ public class SubmissionService {
     private final SubmissionMapper submissionMapper;
     private final AssignmentMapper assignmentMapper;
     private final RedisCacheService cacheService;
+    private final CourseOwnershipGuard ownershipGuard;
 
     /**
      * 学生提交作业
@@ -56,17 +57,24 @@ public class SubmissionService {
     }
 
     /**
-     * 分页查询提交记录（联表带出作业标题、课程名、学生姓名）
+     * 分页查询提交记录（联表带出作业标题、课程名、学生姓名）。
+     *
+     * 越权防护：STUDENT 已在 Controller 层强制 studentId=本人；此处 TEACHER 再按 teacher_id 过滤，
+     * 仅返回自己授课课程下的提交；ADMIN 不附加过滤可看全量。
      */
     public IPage<SubmissionVO> page(long current, long size, Long assignmentId, Long studentId, String status) {
-        return submissionMapper.selectSubmissionPage(new Page<>(current, size), assignmentId, studentId, status);
+        Long teacherId = null;
+        if ("TEACHER".equals(UserContext.getRole())) {
+            teacherId = UserContext.getUserId();
+        }
+        return submissionMapper.selectSubmissionPage(new Page<>(current, size), assignmentId, studentId, status, teacherId);
     }
 
     /**
      * 当前学生的提交记录
      */
     public IPage<SubmissionVO> mySubmissions(long current, long size) {
-        return submissionMapper.selectSubmissionPage(new Page<>(current, size), null, UserContext.getUserId(), null);
+        return submissionMapper.selectSubmissionPage(new Page<>(current, size), null, UserContext.getUserId(), null, null);
     }
 
     /**
@@ -82,6 +90,10 @@ public class SubmissionService {
             throw new BusinessException(ResultCode.NOT_FOUND, "提交记录不存在");
         }
         Assignment assignment = assignmentMapper.selectById(submission.getAssignmentId());
+        // P0-B：教师只能批阅自己授课课程下的提交，防止跨课程改分
+        if (assignment != null) {
+            ownershipGuard.assertCourseOwned(assignment.getCourseId());
+        }
         // 防御性兜底：满分字段为空（手动改库等边缘场景）时按默认 100 处理，避免 NPE
         BigDecimal total = (assignment == null || assignment.getTotalScore() == null)
                 ? new BigDecimal("100") : assignment.getTotalScore();

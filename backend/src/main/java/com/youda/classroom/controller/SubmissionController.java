@@ -6,6 +6,7 @@ import com.youda.classroom.common.Result;
 import com.youda.classroom.dto.GradeDTO;
 import com.youda.classroom.dto.SubmitDTO;
 import com.youda.classroom.enums.BehaviorType;
+import com.youda.classroom.security.UserContext;
 import com.youda.classroom.service.GradingAssistService;
 import com.youda.classroom.service.SubmissionService;
 import com.youda.classroom.vo.GradingAssistVO;
@@ -48,6 +49,10 @@ public class SubmissionController {
                                             @RequestParam(required = false) Long assignmentId,
                                             @RequestParam(required = false) Long studentId,
                                             @RequestParam(required = false) String status) {
+        // P0-A：学生只能查看本人的提交，忽略客户端传入的 studentId，防止横向越权读取全站提交与评语
+        if ("STUDENT".equals(UserContext.getRole())) {
+            studentId = UserContext.getUserId();
+        }
         return Result.success(submissionService.page(current, size, assignmentId, studentId, status));
     }
 
