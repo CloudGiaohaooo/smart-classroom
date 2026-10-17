@@ -108,10 +108,14 @@
 - [x] 前端上传提示区分「秒传成功 / 上传成功」
 - [x] `FileMd5Test` 单测（RFC 1321 标准向量），`mvn test` 9 测试全绿
 
-### Phase 8：MockMvc 接口集成测试
+### Phase 8：MockMvc 接口集成测试（资源上传 + 秒传去重）
 - [x] `ResourceControllerTest`：`@WebMvcTest` + `@ContextConfiguration` 精确加载「控制器 + 真实 Security 过滤链 + 真实 JwtUtil」，Service 与 RBAC Mapper 用 `@MockBean` 隔离，不依赖 MySQL/Redis
 - [x] 覆盖：未登录 401 / 无写权限 403 / 有权限 200 + 秒传去重响应字段（HTTP 恒 200 + 响应体业务码契约）
-- [x] `mvn test` 13 测试全绿（4 MockMvc + 2 FileMd5 + 2 BehaviorService + 5 TextSimilarity）
+
+### Phase 9：MockMvc 接口集成测试补全（批阅 + 课程 RBAC）
+- [x] `SubmissionControllerTest`：批阅辅助 / 批阅 / 提交接口的方法级授权（学生 403、教师 200 + `GradingAssistVO` 字段）
+- [x] `CourseControllerTest`：课程建课 / 查询的 RBAC（学生建课 403、教师建课 200、学生查课 200）
+- [x] `mvn test` 20 测试全绿（11 MockMvc + 2 FileMd5 + 2 BehaviorService + 5 TextSimilarity）
 
 ---
 
@@ -137,3 +141,4 @@
 - **2026-10-17 · Phase 6 完成（答辩材料）**：新增 `答辩材料/` 脱敏公开版三份——`创新点说明.md`（问题—方案—效果三段式 + 答疑要点）、`技术选型问答.md`（RBAC vs 拦截器 / Redis 三问题 / TF-IDF 为何够用 / AOP 埋点优势等 6 问）、`部署与演示脚本.md`（本地与 Docker 两种启动 + 5 步演示动线 + 30 秒电梯陈述）；根 `README.md`「核心亮点」已重构为「差异化创新点 → 工程深度 → 基础工程」三层，创新点提到最前。脱敏用【姓名】【学号】占位；含真实信息的 `答辩材料-原版备份/` 已 gitignore，确认未进入暂存区。
 - **2026-10-17 · Phase 7 完成（创新点 C：MD5 秒传去重）**：`course_resource` 新增 `file_md5` 列（schema.sql + `SchemaMigrationRunner` 幂等迁移老库，information_schema 判存在）；新增纯 JDK `FileMd5`（`MessageDigest`，零外部依赖）与 `ResourceUploadVO`（resourceId/fileMd5/deduplicated/fileUrl）。`upload()` 先算 MD5 再查重，命中则复用既有 `file_url` 不重复落盘，否则落盘；`delete()` 按 `file_url` 引用计数，多条记录共享同一物理文件时保留文件不误删；开关 `resource.dedup-enabled` 外置。前端上传后按 `deduplicated` 区分「秒传成功 / 上传成功」。**效果**：`mvn test` 9 测试全绿（新增 `FileMd5Test` 2 例，对照 RFC 1321 标准向量）；原 `/api/resources/upload` 路径与语义不变，仅扩展响应字段。
 - **2026-10-17 · Phase 8 完成（MockMvc 接口集成测试）**：新增 `ResourceControllerTest`（`@WebMvcTest` + `@ContextConfiguration` 精确加载 `ResourceController`/`SecurityConfig`/`JwtAuthenticationFilter`/`JwtUtil`，`@MockBean` 隔离 `ResourceService` 与 `PermissionMapper`，不依赖 MySQL/Redis）。**效果**：`mvn test` 13 测试全绿；实测未登录返回业务码 401、学生无 `resource:write` 上传返回 403、教师上传返回 200 且带 `deduplicated=true`/`fileMd5`/「秒传成功」字段——用真实 Security 过滤链 + 真实 JWT 验证了「HTTP 恒 200 + 响应体业务码」既定契约。
+- **2026-10-17 · Phase 9 完成（MockMvc 补全：批阅 + 课程 RBAC）**：新增 `SubmissionControllerTest`（批阅辅助 `GET /grading-assist`、批阅 `PUT /grade`、提交 `POST` 三类接口的方法级授权）与 `CourseControllerTest`（建课 `POST`、查课 `GET` 的 RBAC）。**效果**：`mvn test` 20 测试全绿（11 MockMvc + 2 FileMd5 + 2 BehaviorService + 5 TextSimilarity）；实测学生访问批阅辅助 / 批阅 / 建课均 403、教师批阅辅助返回 200 且带 `similar[].similarity/flagged` 与 `suggestions[].text`、学生提交/查课 200——RBAC 方法级授权在 HTTP 层全覆盖验证。

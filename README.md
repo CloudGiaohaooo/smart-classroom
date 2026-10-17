@@ -158,7 +158,8 @@ npm run dev
 | Phase 5 | 部署与测试（Docker 一键起 + 单测覆盖率 + SpringDoc） | ✅ |
 | Phase 6 | 答辩材料沉淀（创新点说明 / 技术问答 / 演示脚本） | ✅ |
 | Phase 7 | 创新点 C：课程资源 MD5 秒传去重（本地去重 + 引用计数删除） | ✅ |
-| Phase 8 | MockMvc 接口集成测试（真实 Security 过滤链 + JWT，401/403/200 契约） | ✅ |
+| Phase 8 | MockMvc 接口集成测试（资源上传 + 秒传去重） | ✅ |
+| Phase 9 | MockMvc 补全（批阅辅助 / 批阅 / 提交 / 课程 RBAC） | ✅ |
 
 **三个创新点**（A + B 分别对应实习前端与后端成果，C 为工程加分项）：
 
