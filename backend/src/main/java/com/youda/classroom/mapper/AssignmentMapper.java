@@ -29,12 +29,14 @@ public interface AssignmentMapper extends BaseMapper<Assignment> {
             "<where>" +
             "  <if test='courseId != null'> AND a.course_id = #{courseId} </if>" +
             "  <if test='keyword != null and keyword != \"\"'> AND a.title LIKE CONCAT('%', #{keyword}, '%') </if>" +
+            "  <if test='studentId != null'> AND EXISTS (SELECT 1 FROM course_enrollment ce WHERE ce.course_id = a.course_id AND ce.student_id = #{studentId}) </if>" +
             "</where>" +
             "ORDER BY a.id DESC" +
             "</script>")
     IPage<AssignmentVO> selectAssignmentPage(Page<?> page,
                                              @Param("courseId") Long courseId,
-                                             @Param("keyword") String keyword);
+                                             @Param("keyword") String keyword,
+                                             @Param("studentId") Long studentId);
 
     /**
      * 按课程分组统计作业数量（LEFT JOIN + GROUP BY，用于仪表盘图表）

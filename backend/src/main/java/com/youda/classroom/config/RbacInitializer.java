@@ -54,18 +54,20 @@ public class RbacInitializer implements CommandLineRunner {
         put("resource:write", "管理资源");
         put("stats:read", "查看统计");
         put("user:read", "查看用户");
+        put("enrollment:read", "查看选课");
+        put("enrollment:write", "选课/退课");
     }};
 
     /** 角色 -> 权限编码列表（最小权限原则：学生只读+提交，教师可写+批阅，管理员全量） */
     private static final Map<String, List<String>> ROLE_PERMS = Map.of(
             "ADMIN", List.of("course:read", "course:write", "assignment:read", "assignment:write",
                     "submission:read", "submission:submit", "submission:grade",
-                    "resource:read", "resource:write", "stats:read", "user:read"),
+                    "resource:read", "resource:write", "stats:read", "user:read", "enrollment:read"),
             "TEACHER", List.of("course:read", "course:write", "assignment:read", "assignment:write",
                     "submission:read", "submission:grade",
-                    "resource:read", "resource:write", "stats:read", "user:read"),
+                    "resource:read", "resource:write", "stats:read", "user:read", "enrollment:read"),
             "STUDENT", List.of("course:read", "assignment:read", "submission:read", "submission:submit",
-                    "resource:read")
+                    "resource:read", "enrollment:read", "enrollment:write")
     );
 
     @Override

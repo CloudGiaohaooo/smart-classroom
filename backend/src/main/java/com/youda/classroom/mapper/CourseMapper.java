@@ -25,10 +25,12 @@ public interface CourseMapper extends BaseMapper<Course> {
             "    AND (c.course_name LIKE CONCAT('%', #{keyword}, '%') OR c.course_code LIKE CONCAT('%', #{keyword}, '%'))" +
             "  </if>" +
             "  <if test='teacherId != null'> AND c.teacher_id = #{teacherId} </if>" +
+            "  <if test='studentId != null'> AND EXISTS (SELECT 1 FROM course_enrollment ce WHERE ce.course_id = c.id AND ce.student_id = #{studentId}) </if>" +
             "</where>" +
             "ORDER BY c.id DESC" +
             "</script>")
     IPage<CourseVO> selectCoursePage(Page<?> page,
                                      @Param("keyword") String keyword,
-                                     @Param("teacherId") Long teacherId);
+                                     @Param("teacherId") Long teacherId,
+                                     @Param("studentId") Long studentId);
 }

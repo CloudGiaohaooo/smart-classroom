@@ -170,3 +170,12 @@
   - **老库幂等迁移**：`SchemaMigrationRunner` 新增 `migrateSubmissionUniqueIndex()`——先按 `(assignment_id, student_id)` 去重（保留最早一条）再 `ADD UNIQUE KEY uk_assignment_student`，用 `information_schema.STATISTICS` 判存在保证幂等；老库从此同样享有数据库层防重复提交。
 
   **效果**：`mvn test` 27 测试全绿、`mvn compile` 通过；全部为「新增防护 + 内部加固」，公开接口路径与语义不变。**已知取舍**：`GradeDTO.feedback` 上限 1000 与 `schema.sql` 的 `feedback VARCHAR(1000)` 对齐；老库去重 `DELETE` 使用 MySQL 多表删除语法（本系统固定 MySQL 8）。
+- **2026-10-17 · Phase 18 完成（选课模型 course_enrollment：业务模型最后一道分水岭）**：针对复审 v3「本周」第 1 项（即 2.2 第 4 项）落地——
+
+  - **选课表**：新增 `course_enrollment`（`course_id` + `student_id`，唯一键 `uk_course_student` 防重复选课），schema.sql 幂等建表（`sql.init.mode=always` 对老库同样生效，无需额外迁移）。
+  - **选课接口**：`EnrollmentService` + `EnrollmentController`（`/api/enrollments`）——学生 `POST/{courseId}` 选课、`DELETE/{courseId}` 退课、`GET/my` 查我选的课、`GET/course/{courseId}/students` 教师/管理员查选课名单（名单查询接 `CourseOwnershipGuard`，教师只能看自己课程的选课名单）。
+  - **RBAC 扩展**：新增 `enrollment:read`/`enrollment:write` 权限——STUDENT 选/退 + 查、TEACHER/ADMIN 仅查，延续最小权限原则。
+  - **选课门禁（封死「学生可对任意作业提交」）**：`SubmissionService.submit` 对 STUDENT 强制 `assertEnrolled(assignment.courseId)`；`CourseService.page`/`AssignmentService.page` 对 STUDENT 按 `EXISTS (SELECT 1 FROM course_enrollment ...)` 过滤，学生只看/交自己选的课，教师/管理员不受限。
+  - **演示数据**：`EnrollmentInitializer`（@Order(4)）幂等补齐——student/lisi/wangwu 选全部课程、demo01~20 选第一门课，答辩现场开箱即用。
+
+  **效果**：`mvn test` 39 测试全绿（新增 `EnrollmentControllerTest` 5 + `EnrollmentServiceTest` 5 + `SubmissionServiceTest` 2）；选课能力全部走新接口，公开接口路径不变，仅对学生视角做数据级收窄（与 Phase 14 授权收紧同性质）。**已知取舍**：① 选课为「学生自主选课」，教师/管理员代选未做（演示由初始化器直接落库）；② `/api/courses/all` 仍作为选课目录返回课程公开元信息（课程名/教师/学分），未按学生过滤；③ 前端已补选课 API（`enrollCourse`/`unenrollCourse`/`getMyCourses`/`getCourseStudents`），但未重写课程列表为「目录 + 选课」两段式 UI，学生当前列表即为其已选课程。

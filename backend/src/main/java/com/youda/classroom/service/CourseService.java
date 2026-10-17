@@ -43,7 +43,12 @@ public class CourseService {
      * 分页查询课程（联表带出教师姓名）
      */
     public IPage<CourseVO> page(long current, long size, String keyword, Long teacherId) {
-        return courseMapper.selectCoursePage(new Page<>(current, size), keyword, teacherId);
+        // 选课模型：学生只看自己已选修的课程，教师/管理员不受限
+        Long studentId = null;
+        if ("STUDENT".equals(UserContext.getRole())) {
+            studentId = UserContext.getUserId();
+        }
+        return courseMapper.selectCoursePage(new Page<>(current, size), keyword, teacherId, studentId);
     }
 
     /**

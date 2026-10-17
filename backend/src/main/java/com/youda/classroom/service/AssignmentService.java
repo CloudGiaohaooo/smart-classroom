@@ -12,6 +12,7 @@ import com.youda.classroom.entity.Assignment;
 import com.youda.classroom.entity.Submission;
 import com.youda.classroom.mapper.AssignmentMapper;
 import com.youda.classroom.mapper.SubmissionMapper;
+import com.youda.classroom.security.UserContext;
 import com.youda.classroom.vo.AssignmentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,12 @@ public class AssignmentService {
      * 分页查询作业（联表带出课程名、提交数、已批阅数）
      */
     public IPage<AssignmentVO> page(long current, long size, Long courseId, String keyword) {
-        return assignmentMapper.selectAssignmentPage(new Page<>(current, size), courseId, keyword);
+        // 选课模型：学生只看自己已选修课程的作业，教师/管理员不受限
+        Long studentId = null;
+        if ("STUDENT".equals(UserContext.getRole())) {
+            studentId = UserContext.getUserId();
+        }
+        return assignmentMapper.selectAssignmentPage(new Page<>(current, size), courseId, keyword, studentId);
     }
 
     public void create(AssignmentDTO dto) {

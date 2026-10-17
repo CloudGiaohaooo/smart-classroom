@@ -15,6 +15,12 @@ export const createCourse = (data) => request.post('/courses', data)
 export const updateCourse = (id, data) => request.put(`/courses/${id}`, data)
 export const deleteCourse = (id) => request.delete(`/courses/${id}`)
 
+// ============ 选课 ============
+export const enrollCourse = (courseId) => request.post(`/enrollments/${courseId}`)
+export const unenrollCourse = (courseId) => request.delete(`/enrollments/${courseId}`)
+export const getMyCourses = () => request.get('/enrollments/my')
+export const getCourseStudents = (courseId) => request.get(`/enrollments/course/${courseId}/students`)
+
 // ============ 作业 ============
 export const getAssignments = (params) => request.get('/assignments', { params })
 export const createAssignment = (data) => request.post('/assignments', data)

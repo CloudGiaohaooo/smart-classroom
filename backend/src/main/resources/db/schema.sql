@@ -77,6 +77,16 @@ CREATE TABLE IF NOT EXISTS `submission` (
     KEY `idx_student_id` (`student_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='作业提交表';
 
+CREATE TABLE IF NOT EXISTS `course_enrollment` (
+    `id`          BIGINT   NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `course_id`   BIGINT   NOT NULL COMMENT '课程ID（关联 course.id）',
+    `student_id`  BIGINT   NOT NULL COMMENT '学生ID（关联 sys_user.id）',
+    `enroll_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '选课时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_course_student` (`course_id`, `student_id`),
+    KEY `idx_student_id` (`student_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='选课表';
+
 -- =============================================================
 -- RBAC 权限模型（Phase 2）
 -- 说明：原 sys_user.role 仍保留（JWT 携带、前端菜单过滤用），

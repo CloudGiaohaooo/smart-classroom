@@ -34,6 +34,7 @@ public class SubmissionService {
     private final AssignmentMapper assignmentMapper;
     private final RedisCacheService cacheService;
     private final CourseOwnershipGuard ownershipGuard;
+    private final EnrollmentService enrollmentService;
 
     /**
      * 学生提交作业
@@ -42,6 +43,10 @@ public class SubmissionService {
         Assignment assignment = assignmentMapper.selectById(dto.getAssignmentId());
         if (assignment == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "作业不存在");
+        }
+        // 选课门禁：学生只能提交自己已选修课程的作业，防止对任意作业提交
+        if ("STUDENT".equals(UserContext.getRole())) {
+            enrollmentService.assertEnrolled(assignment.getCourseId());
         }
         // 业务规则：超过截止时间不允许提交
         if (assignment.getDeadline() != null && assignment.getDeadline().isBefore(LocalDateTime.now())) {
