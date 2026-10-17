@@ -1,7 +1,9 @@
 package com.youda.classroom.controller;
 
 import com.youda.classroom.config.SecurityConfig;
+import com.youda.classroom.entity.User;
 import com.youda.classroom.mapper.PermissionMapper;
+import com.youda.classroom.mapper.UserMapper;
 import com.youda.classroom.security.JwtAuthenticationFilter;
 import com.youda.classroom.security.JwtUtil;
 import com.youda.classroom.service.GradingAssistService;
@@ -57,6 +59,9 @@ class SubmissionControllerTest {
     @MockBean
     private PermissionMapper permissionMapper;
 
+    @MockBean
+    private UserMapper userMapper;
+
     @BeforeEach
     void setUp() {
         // 教师(userId=1)有批阅/读取/提交权限；学生(userId=2)只能读取与提交，无批阅权限
@@ -64,6 +69,11 @@ class SubmissionControllerTest {
                 .thenReturn(List.of("submission:read", "submission:submit", "submission:grade"));
         when(permissionMapper.selectPermCodesByUserId(2L))
                 .thenReturn(List.of("submission:read", "submission:submit"));
+        // JWT 过滤器会复查账号状态：返回未禁用的账号，保证认证通过
+        User active = new User();
+        active.setStatus(1);
+        when(userMapper.selectById(1L)).thenReturn(active);
+        when(userMapper.selectById(2L)).thenReturn(active);
     }
 
     private String bearer(Long userId, String username, String role) {

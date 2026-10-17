@@ -8,8 +8,9 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     # createDatabaseIfNotExist=true：首次启动自动创建数据库 youda_classroom
     url: jdbc:mysql://localhost:3306/youda_classroom?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: root
+    # 数据库凭据支持环境变量注入（DB_USERNAME / DB_PASSWORD）：生产环境务必通过环境变量注入，切勿使用默认弱口令
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
   sql:
     init:
       # 每次启动执行 schema.sql（表结构使用 IF NOT EXISTS，幂等，不会破坏已有数据）
@@ -43,7 +44,8 @@ mybatis-plus:
 
 # JWT 配置（密钥长度需 >= 32 字节，HS256）
 jwt:
-  secret: YouDaSmartClassroom2026SecretKey@CQUPT-cyberspace-security
+  # 签名密钥支持环境变量 JWT_SECRET 注入：生产环境务必通过环境变量/密钥管理服务注入强随机密钥，切勿在源码中保留默认值
+  secret: ${JWT_SECRET:YouDaSmartClassroom2026SecretKey@CQUPT-cyberspace-security}
   expire-minutes: 720
 
 # 文件上传目录与访问前缀
@@ -54,6 +56,8 @@ file:
 # 课程资源秒传去重配置（创新点 C：MD5 秒传去重，外置可调，避免硬编码魔法值）
 resource:
   dedup-enabled: true   # 是否启用 MD5 秒传去重：相同文件只落盘一次，后续复用
+  # 上传文件扩展名白名单（逗号分隔，小写）：拒绝 html/svg/js 等可执行类型，防止上传文件被当作同源脚本形成存储型 XSS
+  allowed-extensions: pdf,doc,docx,xls,xlsx,ppt,pptx,txt,md,zip,png,jpg,jpeg,gif
 
 # 缓存配置（Phase 2：Redis 缓存三策略，全部外置可调，避免硬编码魔法值）
 cache:

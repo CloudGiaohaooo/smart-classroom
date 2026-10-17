@@ -1,6 +1,8 @@
 package com.youda.classroom.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -48,10 +50,14 @@ public class JwtUtil {
      * 解析 token，返回 Claims；解析失败（过期、被篡改、签名不匹配）会抛出异常
      */
     public Claims parseToken(String token) {
-        return Jwts.parserBuilder()
+        Jws<Claims> jws = Jwts.parserBuilder()
                 .setSigningKey(getKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseClaimsJws(token);
+        // 显式校验签名算法为 HS256，防御算法混淆攻击（纵深防御；jjwt 0.11 无 setAllowedAlgorithms 接口）
+        if (!SignatureAlgorithm.HS256.getValue().equals(jws.getHeader().getAlgorithm())) {
+            throw new JwtException("非预期的 JWT 签名算法");
+        }
+        return jws.getBody();
     }
 }

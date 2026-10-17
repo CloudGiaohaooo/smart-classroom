@@ -1,6 +1,8 @@
 package com.youda.classroom.security;
 
+import com.youda.classroom.entity.User;
 import com.youda.classroom.mapper.PermissionMapper;
+import com.youda.classroom.mapper.UserMapper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final PermissionMapper permissionMapper;
+    private final UserMapper userMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -45,16 +48,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String username = claims.getSubject();
                     String role = claims.get("role", String.class);
 
-                    // 从 RBAC 表实时加载权限编码，构建认证对象（权限变更即时生效，无需重发 token）
-                    List<SimpleGrantedAuthority> authorities = permissionMapper
-                            .selectPermCodesByUserId(userId)
-                            .stream().map(SimpleGrantedAuthority::new).toList();
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(userId, null, authorities);
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    // 复查账号是否仍存在且未被禁用（status==0 表示禁用）：账号被禁用/删除后，
+                    // 已签发的 token 立即失效，不写入认证信息，由 SecurityConfig 认证入口统一返回 401
+                    User user = userMapper.selectById(userId);
+                    boolean accountActive = user != null && (user.getStatus() == null || user.getStatus() != 0);
 
-                    // 保留 ThreadLocal 上下文，业务代码零改动
-                    UserContext.set(new UserContext.CurrentUser(userId, username, role));
+                    if (accountActive) {
+                        // 从 RBAC 表实时加载权限编码，构建认证对象（权限变更即时生效，无需重发 token）
+                        List<SimpleGrantedAuthority> authorities = permissionMapper
+                                .selectPermCodesByUserId(userId)
+                                .stream().map(SimpleGrantedAuthority::new).toList();
+                        UsernamePasswordAuthenticationToken auth =
+                                new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+
+                        // 保留 ThreadLocal 上下文，业务代码零改动
+                        UserContext.set(new UserContext.CurrentUser(userId, username, role));
+                    }
                 } catch (Exception e) {
                     // token 无效/过期：不写入认证信息，由 SecurityConfig 认证入口统一返回 401
                     SecurityContextHolder.clearContext();
