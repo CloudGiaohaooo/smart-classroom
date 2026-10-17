@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // 放行：登录接口、静态文件、接口文档
-                        .requestMatchers("/api/auth/login", "/files/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/auth/login", "/files/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // 其余 /api/** 一律要求登录；细粒度权限交给 @PreAuthorize
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
