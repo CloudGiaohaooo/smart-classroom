@@ -12,6 +12,7 @@ import com.youda.classroom.util.FileMd5;
 import com.youda.classroom.vo.ResourceUploadVO;
 import com.youda.classroom.vo.ResourceVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -28,6 +31,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ResourceService {
 
     private final CourseResourceMapper resourceMapper;
@@ -42,6 +46,10 @@ public class ResourceService {
     @Value("${resource.dedup-enabled}")
     private boolean dedupEnabled;
 
+    /** 允许上传的文件扩展名白名单（application.yml 可配，防上传 html/svg/js 等可执行文件形成存储型 XSS） */
+    @Value("${resource.allowed-extensions}")
+    private String allowedExtensions;
+
     /**
      * 上传课程资源。
      * 创新点 C：先计算文件 MD5，若已有相同 MD5 的资源则复用其物理文件（秒传，不重复落盘），
@@ -52,8 +60,15 @@ public class ResourceService {
             throw new BusinessException(ResultCode.BAD_REQUEST, "上传文件不能为空");
         }
 
-        // 1. 一次性读入字节数组，同时用于计算 MD5 与落盘（避免二次读取流）
+        // 0. 扩展名白名单校验 + 原始文件名清洗（防上传可执行文件形成存储型 XSS / 目录穿越）
         String originalName = file.getOriginalFilename();
+        String ext = StringUtils.getFilenameExtension(originalName);
+        if (!isAllowedExtension(ext)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "不支持的文件类型，仅允许：" + allowedExtensions);
+        }
+        originalName = sanitizeFileName(originalName);
+
+        // 1. 一次性读入字节数组，同时用于计算 MD5 与落盘（避免二次读取流）
         byte[] bytes;
         try {
             bytes = file.getBytes();
@@ -77,12 +92,11 @@ public class ResourceService {
             deduplicated = true;
         } else {
             // 3. 生成唯一文件名，避免重名覆盖；按课程分目录存放
-            String ext = StringUtils.getFilenameExtension(originalName);
-            String uuidName = UUID.randomUUID().toString().replace("-", "") + (ext != null ? "." + ext : "");
+            String uuidName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
             String relativeDir = courseId + File.separator;
             File dir = new File(uploadDir, relativeDir).getAbsoluteFile();
-            if (!dir.exists()) {
-                dir.mkdirs();
+            if (!dir.exists() && !dir.mkdirs()) {
+                throw new BusinessException(ResultCode.ERROR, "创建上传目录失败：" + dir.getAbsolutePath());
             }
             File dest = new File(dir, uuidName);
             try {
@@ -97,7 +111,7 @@ public class ResourceService {
         // 4. 写入元数据（无论秒传与否，都为本课程新增一条可下载记录）
         CourseResource resource = new CourseResource();
         resource.setCourseId(courseId);
-        resource.setResourceName(StringUtils.hasText(originalName) ? originalName : "未命名资源");
+        resource.setResourceName(originalName);
         resource.setResourceType(StringUtils.hasText(resourceType) ? resourceType.toUpperCase() : "OTHER");
         resource.setFileUrl(fileUrl);
         resource.setFileMd5(md5);
@@ -137,10 +151,35 @@ public class ResourceService {
             if (refCount == null || refCount == 0) {
                 String relativePath = resource.getFileUrl().replace(accessPrefix + "/", "");
                 File f = new File(uploadDir, relativePath);
-                if (f.exists()) {
-                    f.delete();
+                if (f.exists() && !f.delete()) {
+                    log.warn("物理文件删除失败：{}", f.getAbsolutePath());
                 }
             }
         }
+    }
+
+    /**
+     * 判断扩展名是否在允许上传的白名单内（小写比较）。
+     */
+    private boolean isAllowedExtension(String ext) {
+        if (!StringUtils.hasText(ext)) {
+            return false;
+        }
+        return Arrays.asList(allowedExtensions.split(",")).contains(ext.toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * 清洗原始文件名：去除路径分隔符与控制字符、限制长度，
+     * 防止目录穿越与把文件名当作前端 XSS 输入源。
+     */
+    private String sanitizeFileName(String name) {
+        if (!StringUtils.hasText(name)) {
+            return "未命名资源";
+        }
+        String cleaned = name.replace('\\', '_').replace('/', '_').replaceAll("[\\p{Cntrl}]", "");
+        if (cleaned.length() > 255) {
+            cleaned = cleaned.substring(0, 255);
+        }
+        return cleaned.trim();
     }
 }

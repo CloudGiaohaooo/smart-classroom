@@ -47,6 +47,8 @@ class ResourceServiceTest {
         ReflectionTestUtils.setField(resourceService, "uploadDir", tempDir.toString());
         ReflectionTestUtils.setField(resourceService, "accessPrefix", "/files");
         ReflectionTestUtils.setField(resourceService, "dedupEnabled", true);
+        ReflectionTestUtils.setField(resourceService, "allowedExtensions",
+                "pdf,doc,docx,xls,xlsx,ppt,pptx,txt,md,zip,png,jpg,jpeg,gif");
         UserContext.set(new UserContext.CurrentUser(1L, "teacher", "TEACHER"));
     }
 
@@ -133,5 +135,13 @@ class ResourceServiceTest {
 
         assertThrows(BusinessException.class,
                 () -> resourceService.upload(1L, "PDF", file("")));
+    }
+
+    @Test
+    void uploadDisallowedExtensionThrowsBusinessException() {
+        MockMultipartFile html = new MockMultipartFile("file", "evil.html", "text/html",
+                "<script>alert(1)</script>".getBytes(StandardCharsets.UTF_8));
+        assertThrows(BusinessException.class,
+                () -> resourceService.upload(1L, "OTHER", html));
     }
 }
