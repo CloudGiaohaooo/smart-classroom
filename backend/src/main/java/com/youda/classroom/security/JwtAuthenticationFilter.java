@@ -4,11 +4,13 @@ import com.youda.classroom.entity.User;
 import com.youda.classroom.mapper.PermissionMapper;
 import com.youda.classroom.mapper.UserMapper;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +30,7 @@ import java.util.List;
  * 2. 把「RBAC 权限编码」写入 SecurityContext，配合 @PreAuthorize 做方法级细粒度授权；
  * 3. 同时保留 ThreadLocal 上下文，业务代码（如 SubmissionService 读当前用户）零改动。
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -65,8 +68,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         // 保留 ThreadLocal 上下文，业务代码零改动
                         UserContext.set(new UserContext.CurrentUser(userId, username, role));
                     }
+                } catch (JwtException | IllegalArgumentException e) {
+                    // token 无效/过期/格式错误：正常未认证场景，不写入认证信息，由 SecurityConfig 统一返回 401
+                    SecurityContextHolder.clearContext();
                 } catch (Exception e) {
-                    // token 无效/过期：不写入认证信息，由 SecurityConfig 认证入口统一返回 401
+                    // 非 token 解析类异常（如数据库连接失败）：记录错误，便于区分「未登录」与「系统故障」
+                    log.error("JWT 认证过程发生非预期异常（疑似依赖故障，非单纯未登录）", e);
                     SecurityContextHolder.clearContext();
                 }
             }

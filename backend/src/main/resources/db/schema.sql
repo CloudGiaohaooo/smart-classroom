@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS `submission` (
     `status`        VARCHAR(20)   DEFAULT 'SUBMITTED' COMMENT '状态：SUBMITTED已提交/GRADED已批阅',
     `grade_time`    DATETIME      DEFAULT NULL COMMENT '批阅时间',
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_assignment_student` (`assignment_id`, `student_id`),
     KEY `idx_assignment_id` (`assignment_id`),
     KEY `idx_student_id` (`student_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='作业提交表';

@@ -35,6 +35,8 @@ public class FileDownloadHeaderFilter extends OncePerRequestFilter {
         // 强制以附件形式下载（不内联渲染）；禁止 MIME 嗅探，防内容被当作可执行脚本
         response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
         response.setHeader("X-Content-Type-Options", "nosniff");
+        // 禁止缓存下载内容，避免敏感资源被本地/中间层缓存复用
+        response.setHeader("Cache-Control", "no-store");
         filterChain.doFilter(request, response);
     }
 }

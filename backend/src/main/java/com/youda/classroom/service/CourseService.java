@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.youda.classroom.cache.CacheKeys;
 import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
@@ -29,9 +30,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CourseService {
 
-    /** 课程全量列表缓存键（热点数据：下拉选择、看板频繁读取） */
-    private static final String COURSE_LIST_CACHE_KEY = "cache:course:all";
-
     private final CourseMapper courseMapper;
     private final AssignmentMapper assignmentMapper;
     private final CourseResourceMapper resourceMapper;
@@ -52,7 +50,7 @@ public class CourseService {
      * 全部课程（供下拉选择）：走 Redis 缓存，落地穿透/击穿/雪崩三策略，Redis 宕机自动降级
      */
     public List<Course> listAll() {
-        return cacheService.getOrLoad(COURSE_LIST_CACHE_KEY,
+        return cacheService.getOrLoad(CacheKeys.COURSE_LIST,
                 new TypeReference<List<Course>>() {}, courseListTtl,
                 () -> courseMapper.selectList(null));
     }
@@ -68,8 +66,8 @@ public class CourseService {
         // P0-B：授课教师归属——非管理员只能为自己建课，防止教师代建他人课程；管理员可代建（沿用 DTO 的 teacherId）
         course.setTeacherId("ADMIN".equals(UserContext.getRole()) ? dto.getTeacherId() : UserContext.getUserId());
         courseMapper.insert(course);
-        cacheService.evict(COURSE_LIST_CACHE_KEY);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.COURSE_LIST);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 
     public void update(Long id, CourseDTO dto) {
@@ -101,8 +99,8 @@ public class CourseService {
             course.setTeacherId(dto.getTeacherId());
         }
         courseMapper.updateById(course);
-        cacheService.evict(COURSE_LIST_CACHE_KEY);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.COURSE_LIST);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 
     public void delete(Long id) {
@@ -120,7 +118,7 @@ public class CourseService {
             throw new BusinessException(ResultCode.BAD_REQUEST, "该课程下存在作业或资源，请先清理后再删除");
         }
         courseMapper.deleteById(id);
-        cacheService.evict(COURSE_LIST_CACHE_KEY);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.COURSE_LIST);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 }

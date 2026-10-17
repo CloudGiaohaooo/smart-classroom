@@ -3,6 +3,7 @@ package com.youda.classroom.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.youda.classroom.cache.CacheKeys;
 import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
@@ -124,7 +125,7 @@ public class ResourceService {
         resource.setUploaderId(UserContext.getUserId());
         resource.setUploadTime(LocalDateTime.now());
         resourceMapper.insert(resource);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
 
         ResourceUploadVO vo = new ResourceUploadVO();
         vo.setResourceId(resource.getId());
@@ -153,7 +154,7 @@ public class ResourceService {
         // P0-B：仅管理员或该资源所属课程的授课教师可删除
         ownershipGuard.assertCourseOwned(resource.getCourseId());
         resourceMapper.deleteById(id);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
         if (StringUtils.hasText(resource.getFileUrl())) {
             Long refCount = resourceMapper.selectCount(new LambdaQueryWrapper<CourseResource>()
                     .eq(CourseResource::getFileUrl, resource.getFileUrl()));
@@ -174,7 +175,11 @@ public class ResourceService {
         if (!StringUtils.hasText(ext)) {
             return false;
         }
-        return Arrays.asList(allowedExtensions.split(",")).contains(ext.toLowerCase(Locale.ROOT));
+        String lower = ext.toLowerCase(Locale.ROOT);
+        // 逐项 trim，配置写成 "pdf, doc" 也不会误拒 doc
+        return Arrays.stream(allowedExtensions.split(","))
+                .map(String::trim)
+                .anyMatch(lower::equals);
     }
 
     /**

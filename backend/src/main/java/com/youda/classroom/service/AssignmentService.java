@@ -3,6 +3,7 @@ package com.youda.classroom.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.youda.classroom.cache.CacheKeys;
 import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
@@ -44,7 +45,7 @@ public class AssignmentService {
         assignment.setDeadline(dto.getDeadline());
         assignment.setTotalScore(dto.getTotalScore() == null ? new java.math.BigDecimal("100") : dto.getTotalScore());
         assignmentMapper.insert(assignment);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 
     public void update(Long id, AssignmentDTO dto) {
@@ -70,7 +71,7 @@ public class AssignmentService {
             assignment.setTotalScore(dto.getTotalScore());
         }
         assignmentMapper.updateById(assignment);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 
     public void delete(Long id) {
@@ -86,6 +87,6 @@ public class AssignmentService {
             throw new BusinessException(ResultCode.BAD_REQUEST, "该作业下存在 " + subCount + " 条提交记录，请先处理后再删除");
         }
         assignmentMapper.deleteById(id);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 }

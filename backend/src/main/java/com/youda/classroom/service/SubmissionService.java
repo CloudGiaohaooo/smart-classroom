@@ -1,7 +1,9 @@
 package com.youda.classroom.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.youda.classroom.cache.CacheKeys;
 import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
@@ -14,6 +16,7 @@ import com.youda.classroom.mapper.SubmissionMapper;
 import com.youda.classroom.security.UserContext;
 import com.youda.classroom.vo.SubmissionVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,15 +48,29 @@ public class SubmissionService {
             throw new BusinessException(ResultCode.BAD_REQUEST, "作业已过截止时间，无法提交");
         }
 
+        Long currentUserId = UserContext.getUserId();
+        // 防重复提交：同一学生同一作业只允许一条记录（与 schema.sql 的唯一索引双重保障）
+        Long exists = submissionMapper.selectCount(new LambdaQueryWrapper<Submission>()
+                .eq(Submission::getAssignmentId, dto.getAssignmentId())
+                .eq(Submission::getStudentId, currentUserId));
+        if (exists != null && exists > 0) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该作业已提交，请勿重复提交");
+        }
+
         Submission submission = new Submission();
         submission.setAssignmentId(dto.getAssignmentId());
-        submission.setStudentId(UserContext.getUserId());
+        submission.setStudentId(currentUserId);
         submission.setContent(dto.getContent());
         submission.setFileUrl(dto.getFileUrl());
         submission.setStatus("SUBMITTED");
         submission.setSubmitTime(LocalDateTime.now());
-        submissionMapper.insert(submission);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        try {
+            submissionMapper.insert(submission);
+        } catch (DuplicateKeyException e) {
+            // 并发重复提交时唯一索引兜底：给出友好提示，而不是 500
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该作业已提交，请勿重复提交");
+        }
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 
     /**
@@ -107,7 +124,7 @@ public class SubmissionService {
         submission.setStatus("GRADED");
         submission.setGradeTime(LocalDateTime.now());
         submissionMapper.updateById(submission);
-        cacheService.evict(StatsService.STATS_CACHE_KEY);
+        cacheService.evict(CacheKeys.STATS_OVERVIEW);
     }
 
 }
