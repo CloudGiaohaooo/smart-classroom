@@ -26,6 +26,8 @@ export const submitAssignment = (data) => request.post('/submissions', data)
 export const getSubmissions = (params) => request.get('/submissions', { params })
 export const getMySubmissions = (params) => request.get('/submissions/my', { params })
 export const gradeSubmission = (id, data) => request.put(`/submissions/${id}/grade`, data)
+// 批阅辅助（创新点 A）：相似提交 + 推荐评语
+export const getGradingAssist = (id) => request.get(`/submissions/${id}/grading-assist`)
 
 // ============ 课程资源 ============
 // FormData 由 axios 自动设置 multipart 边界，勿手动指定 Content-Type

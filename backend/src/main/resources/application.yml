@@ -58,3 +58,10 @@ cache:
   null-value-ttl: 30     # 空值缓存 TTL（秒）——防缓存穿透
   lock-ttl: 5            # 互斥锁 TTL（秒）——防缓存击穿
   ttl-jitter: 60         # 随机 TTL 抖动上限（秒）——防缓存雪崩
+
+# 智能批阅辅助配置（Phase 3 创新点 A：雷同检测 + 评语推荐，阈值可调）
+similarity:
+  threshold: 0.45              # 相似度阈值（余弦 0~1），高于此值才进入「相似提交」列表
+  suspicious-threshold: 0.75   # 疑似雷同阈值，高于此值标记 flagged
+  top-n: 10                    # 相似提交最多返回条数
+  suggestion-limit: 3          # 推荐评语返回条数

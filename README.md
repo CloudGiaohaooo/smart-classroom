@@ -138,7 +138,7 @@ npm run dev
 | --- | --- | --- |
 | Phase 1 | 基线与文档（`dev` 分支、改进计划、路线图） | ✅ |
 | Phase 2 | 权限与缓存（RBAC 四表 + Spring Security + Redis 三策略） | ✅ |
-| Phase 3 | 创新点 A：智能辅助批阅（TF-IDF 雷同检测 + 评语推荐） | ⏳ |
+| Phase 3 | 创新点 A：智能辅助批阅（TF-IDF 雷同检测 + 评语推荐） | ✅ |
 | Phase 4 | 创新点 B：学习预警看板（AOP 埋点 + ECharts 看板） | ⏳ |
 | Phase 5 | 部署与测试（Docker 一键起 + 单测覆盖率 + SpringDoc） | ⏳ |
 | Phase 6 | 答辩材料沉淀（创新点说明 / 技术问答 / 演示脚本） | ⏳ |
