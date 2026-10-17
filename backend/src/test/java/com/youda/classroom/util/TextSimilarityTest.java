@@ -3,6 +3,7 @@ package com.youda.classroom.util;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,5 +55,23 @@ class TextSimilarityTest {
         assertEquals(0.0, TextSimilarity.tfIdfCosine("", "text", List.of("text")), 1e-9);
         assertEquals(0.0, TextSimilarity.tfIdfCosine("a", "b", List.of()), 1e-9);
         assertEquals(0.0, TextSimilarity.tfIdfCosine(null, "b", List.of("a", "b")), 1e-9);
+    }
+
+    @Test
+    void precomputedVectorsMatchSingleShot() {
+        String a = "本程序使用冒泡排序对整型数组进行升序排列。";
+        String b = "本程序使用选择排序对整型数组进行升序排列。";
+        String c = "今天天气很好，我去图书馆看书。";
+        List<String> corpus = List.of(a, b, c);
+
+        Map<String, Integer> df = TextSimilarity.documentFrequency(corpus);
+        int n = corpus.size();
+        Map<String, Double> va = TextSimilarity.tfIdfVector(a, df, n);
+        Map<String, Double> vb = TextSimilarity.tfIdfVector(b, df, n);
+
+        // 预计算向量 + 余弦，与一次性 tfIdfCosine 结果一致（验证 O(n²·L) 优化等价）
+        assertEquals(TextSimilarity.tfIdfCosine(a, b, corpus), TextSimilarity.cosine(va, vb), 1e-9);
+        assertEquals(TextSimilarity.tfIdfCosine(a, c, corpus),
+                TextSimilarity.cosine(va, TextSimilarity.tfIdfVector(c, df, n)), 1e-9);
     }
 }

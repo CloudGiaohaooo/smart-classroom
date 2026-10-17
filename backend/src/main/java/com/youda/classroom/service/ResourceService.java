@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -84,58 +85,69 @@ public class ResourceService {
             throw new BusinessException(ResultCode.ERROR, "文件读取失败：" + e.getMessage());
         }
 
-        // 2. 秒传去重：命中相同 MD5 则复用已有物理文件，只新增元数据
-        CourseResource existing = null;
-        if (dedupEnabled) {
-            existing = resourceMapper.selectOne(new LambdaQueryWrapper<CourseResource>()
-                    .eq(CourseResource::getFileMd5, md5)
-                    .last("LIMIT 1"));
-        }
-
-        String fileUrl;
-        boolean deduplicated;
-        if (existing != null) {
-            fileUrl = existing.getFileUrl();
-            deduplicated = true;
-        } else {
-            // 3. 生成唯一文件名，避免重名覆盖；按课程分目录存放
-            String uuidName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
-            String relativeDir = courseId + File.separator;
-            File dir = new File(uploadDir, relativeDir).getAbsoluteFile();
-            if (!dir.exists() && !dir.mkdirs()) {
-                throw new BusinessException(ResultCode.ERROR, "创建上传目录失败：" + dir.getAbsolutePath());
+        // 2. 秒传去重 + 落盘 + 元数据写入：整个「先查后写」临界区用按内容 md5 的分布式锁串行化。
+        //    并发上传同一内容时若不串行化，会双双 miss 查重、各自落盘（去重失效）；锁命中后，第二个请求能查到前者已插入的记录并复用。
+        //    注意：不改 file_md5 为唯一索引 —— 当前设计允许「同一物理文件被多个课程行引用」（去重键是物理文件而非行），
+        //    唯一索引会误禁跨课程复用；分布式锁才是匹配该设计的正确修法。
+        String lockKey = "res:file:" + md5;
+        boolean locked = cacheService.tryAcquire(lockKey, 10);
+        try {
+            CourseResource existing = null;
+            if (dedupEnabled) {
+                existing = resourceMapper.selectOne(new LambdaQueryWrapper<CourseResource>()
+                        .eq(CourseResource::getFileMd5, md5)
+                        .last("LIMIT 1"));
             }
-            File dest = new File(dir, uuidName);
-            // 流式落盘（MultipartFile.transferTo 内部流式拷贝，不一次性读入内存）
-            try {
-                file.transferTo(dest);
-            } catch (IOException e) {
-                throw new BusinessException(ResultCode.ERROR, "文件保存失败：" + e.getMessage());
+
+            String fileUrl;
+            boolean deduplicated;
+            if (existing != null) {
+                fileUrl = existing.getFileUrl();
+                deduplicated = true;
+            } else {
+                // 3. 生成唯一文件名，避免重名覆盖；按课程分目录存放
+                String uuidName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+                String relativeDir = courseId + File.separator;
+                File dir = new File(uploadDir, relativeDir).getAbsoluteFile();
+                if (!dir.exists() && !dir.mkdirs()) {
+                    throw new BusinessException(ResultCode.ERROR, "创建上传目录失败：" + dir.getAbsolutePath());
+                }
+                File dest = new File(dir, uuidName);
+                // 流式落盘（MultipartFile.transferTo 内部流式拷贝，不一次性读入内存）
+                try {
+                    file.transferTo(dest);
+                } catch (IOException e) {
+                    throw new BusinessException(ResultCode.ERROR, "文件保存失败：" + e.getMessage());
+                }
+                fileUrl = accessPrefix + "/" + relativeDir.replace('\\', '/') + uuidName;
+                deduplicated = false;
             }
-            fileUrl = accessPrefix + "/" + relativeDir.replace('\\', '/') + uuidName;
-            deduplicated = false;
+
+            // 4. 写入元数据（无论秒传与否，都为本课程新增一条可下载记录）
+            CourseResource resource = new CourseResource();
+            resource.setCourseId(courseId);
+            resource.setResourceName(originalName);
+            resource.setResourceType(StringUtils.hasText(resourceType) ? resourceType.toUpperCase() : "OTHER");
+            resource.setFileUrl(fileUrl);
+            resource.setFileMd5(md5);
+            resource.setFileSize(file.getSize());
+            resource.setUploaderId(UserContext.getUserId());
+            resource.setUploadTime(LocalDateTime.now());
+            resourceMapper.insert(resource);
+            cacheService.evict(CacheKeys.STATS_OVERVIEW);
+
+            ResourceUploadVO vo = new ResourceUploadVO();
+            vo.setResourceId(resource.getId());
+            vo.setFileMd5(md5);
+            vo.setDeduplicated(deduplicated);
+            // 响应返回带签名与有效期的下载 URL；数据库仍存未签名路径
+            vo.setFileUrl(signedFileUrl.sign(fileUrl));
+            return vo;
+        } finally {
+            if (locked) {
+                cacheService.release(lockKey);
+            }
         }
-
-        // 4. 写入元数据（无论秒传与否，都为本课程新增一条可下载记录）
-        CourseResource resource = new CourseResource();
-        resource.setCourseId(courseId);
-        resource.setResourceName(originalName);
-        resource.setResourceType(StringUtils.hasText(resourceType) ? resourceType.toUpperCase() : "OTHER");
-        resource.setFileUrl(fileUrl);
-        resource.setFileMd5(md5);
-        resource.setFileSize(file.getSize());
-        resource.setUploaderId(UserContext.getUserId());
-        resource.setUploadTime(LocalDateTime.now());
-        resourceMapper.insert(resource);
-        cacheService.evict(CacheKeys.STATS_OVERVIEW);
-
-        ResourceUploadVO vo = new ResourceUploadVO();
-        vo.setResourceId(resource.getId());
-        vo.setFileMd5(md5);
-        vo.setDeduplicated(deduplicated);
-        // 响应返回带签名与有效期的下载 URL；数据库仍存未签名路径
-        vo.setFileUrl(signedFileUrl.sign(fileUrl));
-        return vo;
     }
 
     /**
@@ -163,6 +175,7 @@ public class ResourceService {
      * 删除资源：同时删除数据库记录与磁盘文件。
      * 秒传去重后同一物理文件可能被多条记录引用，仅当无其他记录引用时才删除磁盘文件。
      */
+    @Transactional
     public void delete(Long id) {
         CourseResource resource = resourceMapper.selectById(id);
         if (resource == null) {
@@ -170,17 +183,27 @@ public class ResourceService {
         }
         // P0-B：仅管理员或该资源所属课程的授课教师可删除
         ownershipGuard.assertCourseOwned(resource.getCourseId());
-        resourceMapper.deleteById(id);
-        cacheService.evict(CacheKeys.STATS_OVERVIEW);
-        if (StringUtils.hasText(resource.getFileUrl())) {
-            Long refCount = resourceMapper.selectCount(new LambdaQueryWrapper<CourseResource>()
-                    .eq(CourseResource::getFileUrl, resource.getFileUrl()));
-            if (refCount == null || refCount == 0) {
-                String relativePath = resource.getFileUrl().replace(accessPrefix + "/", "");
-                File f = new File(uploadDir, relativePath);
-                if (f.exists() && !f.delete()) {
-                    log.warn("物理文件删除失败：{}", f.getAbsolutePath());
+        // 用与上传相同的按内容锁串行化「删行 → 重算引用 → 删物理文件」，
+        // 避免并发删除同一物理文件的最后两条记录时，双方都误判「仍有引用」而漏删物理文件。
+        String lockKey = "res:file:" + (StringUtils.hasText(resource.getFileMd5()) ? resource.getFileMd5() : resource.getFileUrl());
+        boolean locked = cacheService.tryAcquire(lockKey, 10);
+        try {
+            resourceMapper.deleteById(id);
+            cacheService.evict(CacheKeys.STATS_OVERVIEW);
+            if (StringUtils.hasText(resource.getFileUrl())) {
+                Long refCount = resourceMapper.selectCount(new LambdaQueryWrapper<CourseResource>()
+                        .eq(CourseResource::getFileUrl, resource.getFileUrl()));
+                if (refCount == null || refCount == 0) {
+                    String relativePath = resource.getFileUrl().replace(accessPrefix + "/", "");
+                    File f = new File(uploadDir, relativePath);
+                    if (f.exists() && !f.delete()) {
+                        log.warn("物理文件删除失败：{}", f.getAbsolutePath());
+                    }
                 }
+            }
+        } finally {
+            if (locked) {
+                cacheService.release(lockKey);
             }
         }
     }

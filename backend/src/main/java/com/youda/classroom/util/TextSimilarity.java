@@ -54,26 +54,43 @@ public final class TextSimilarity {
      * @param corpus 语料（同一作业下的全部提交文本），用于计算 IDF
      */
     public static double tfIdfCosine(String a, String b, List<String> corpus) {
-        // 1. 对语料所有文档分词，统计每个词的文档频率 DF
-        Map<String, Integer> df = new HashMap<>();
+        Map<String, Integer> df = documentFrequency(corpus);
         int n = 0;
         for (String doc : corpus) {
-            if (doc == null) {
-                continue;
-            }
-            n++;
-            Set<String> unique = new HashSet<>(tokenize(doc));
-            for (String t : unique) {
-                df.merge(t, 1, Integer::sum);
+            if (doc != null) {
+                n++;
             }
         }
         if (n == 0) {
             return 0;
         }
-        // 2. 计算两段文本的 TF-IDF 向量
-        Map<String, Double> va = tfIdfVector(tokenize(a), df, n);
-        Map<String, Double> vb = tfIdfVector(tokenize(b), df, n);
-        return cosine(va, vb);
+        return cosine(tfIdfVector(a, df, n), tfIdfVector(b, df, n));
+    }
+
+    /**
+     * 统计语料中每个词的文档频率 DF（该词出现在多少篇文档中）。
+     * 供调用方一次性计算 IDF，避免在「目标 vs 每个候选」的循环里重复对整个语料分词（O(n·L) 优化）。
+     */
+    public static Map<String, Integer> documentFrequency(List<String> docs) {
+        Map<String, Integer> df = new HashMap<>();
+        for (String doc : docs) {
+            if (doc == null) {
+                continue;
+            }
+            Set<String> unique = new HashSet<>(tokenize(doc));
+            for (String t : unique) {
+                df.merge(t, 1, Integer::sum);
+            }
+        }
+        return df;
+    }
+
+    /**
+     * 计算单篇文档的 TF-IDF 向量（仅分词一次），配合 {@link #documentFrequency} 与 {@link #cosine}
+     * 走「先全量预计算向量、再逐对求余弦」的高效路径。
+     */
+    public static Map<String, Double> tfIdfVector(String doc, Map<String, Integer> df, int n) {
+        return tfIdfVector(tokenize(doc), df, n);
     }
 
     /** 计算单个文档的 TF-IDF 向量：TF * IDF，IDF 用 log(1 + N/df) 平滑避免 df=N 时权重归零 */
@@ -92,7 +109,7 @@ public final class TextSimilarity {
     }
 
     /** 两个稀疏向量的余弦相似度 */
-    private static double cosine(Map<String, Double> va, Map<String, Double> vb) {
+    public static double cosine(Map<String, Double> va, Map<String, Double> vb) {
         double dot = 0;
         double normA = 0;
         for (Map.Entry<String, Double> e : va.entrySet()) {

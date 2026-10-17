@@ -22,12 +22,15 @@ public class AuthService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
+    private final LoginRateLimiter loginRateLimiter;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
-     * 登录：校验账号密码 -> 生成 JWT
+     * 登录：限流 -> 校验账号密码 -> 生成 JWT。
+     * 登录是唯一无需鉴权即可访问的入口，先做「账号+IP」双维度限流防暴力破解，登录成功再清零计数。
      */
-    public LoginVO login(LoginDTO dto) {
+    public LoginVO login(LoginDTO dto, String ip) {
+        loginRateLimiter.checkAllowed(dto.getUsername(), ip);
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, dto.getUsername()));
         if (user == null) {
@@ -42,6 +45,7 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+        loginRateLimiter.clear(dto.getUsername(), ip);
         return new LoginVO(token, toUserVO(user));
     }
 

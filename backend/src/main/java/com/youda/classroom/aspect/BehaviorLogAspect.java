@@ -7,7 +7,6 @@ import com.youda.classroom.dto.SubmitDTO;
 import com.youda.classroom.entity.StudentBehavior;
 import com.youda.classroom.entity.User;
 import com.youda.classroom.enums.BehaviorType;
-import com.youda.classroom.mapper.StudentBehaviorMapper;
 import com.youda.classroom.mapper.UserMapper;
 import com.youda.classroom.security.UserContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,7 +32,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class BehaviorLogAspect {
 
-    private final StudentBehaviorMapper behaviorMapper;
+    private final BehaviorLogWriter behaviorWriter;
     private final UserMapper userMapper;
 
     @AfterReturning(pointcut = "@annotation(behaviorLog)")
@@ -50,7 +49,7 @@ public class BehaviorLogAspect {
             b.setTargetId(resolveTargetId(joinPoint, type));
             b.setDetail(resolveDetail(type));
             b.setOccurTime(LocalDateTime.now());
-            behaviorMapper.insert(b);
+            behaviorWriter.write(b);
         } catch (Exception e) {
             log.warn("学习行为埋点失败（不影响业务）: {}", e.getMessage());
         }

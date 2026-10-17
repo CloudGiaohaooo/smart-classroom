@@ -86,13 +86,23 @@ public class GradingAssistService {
         List<Submission> others = all.stream()
                 .filter(s -> !s.getId().equals(target.getId()))
                 .toList();
-        // 语料 = 该作业全部提交文本（用于 IDF 统计）
-        List<String> corpus = all.stream().map(s -> nvl(s.getContent())).toList();
         Map<Long, String> nameMap = loadStudentNames(others);
+
+        // 语料 = 该作业全部提交文本（用于 IDF 统计）
+        // 性能优化：DF 与每篇提交的 TF-IDF 向量各算一次（O(n·L)），再逐对求余弦（O(n·d)），
+        // 避免旧实现「每个候选都重新对整个语料分词 + 重算 DF」导致的 O(n²·L)。
+        List<String> corpus = all.stream().map(s -> nvl(s.getContent())).toList();
+        Map<String, Integer> df = TextSimilarity.documentFrequency(corpus);
+        int n = corpus.size();
+        Map<String, Double> targetVec = TextSimilarity.tfIdfVector(targetText, df, n);
+        Map<Long, Map<String, Double>> vecBySubmission = new HashMap<>();
+        for (Submission s : all) {
+            vecBySubmission.put(s.getId(), TextSimilarity.tfIdfVector(nvl(s.getContent()), df, n));
+        }
 
         List<SimilarSubmissionVO> result = new ArrayList<>();
         for (Submission other : others) {
-            double sim = TextSimilarity.tfIdfCosine(targetText, nvl(other.getContent()), corpus);
+            double sim = TextSimilarity.cosine(targetVec, vecBySubmission.getOrDefault(other.getId(), Map.of()));
             if (sim < threshold) {
                 continue;
             }

@@ -89,3 +89,14 @@ warning:
   no-submit-days: 7        # 超过 N 天未提交作业 → 触发「长期未提交作业」预警
   trend-days: 7            # 提交率趋势统计最近 N 天
   heat-limit: 10           # 资源访问热力 TopN 课程数
+
+# 跨域白名单（显式来源，避免 "*" + 凭据这一无效/危险组合）
+app:
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173,http://localhost
+
+# 登录限流（防暴力破解 / 撞库；登录是唯一无需鉴权即可访问的入口）
+login:
+  rate-limit:
+    max-attempts: 5       # 窗口内最多允许的失败尝试次数（第 6 次起拒绝）
+    window-minutes: 10    # 计数窗口（分钟）

@@ -120,6 +120,24 @@ public class RedisCacheService {
         safeDelete(key);
     }
 
+    /**
+     * 尝试获取分布式互斥锁（Redis SETNX），供「先查后写」类临界区使用（如秒传去重、资源删除）。
+     * 返回 true 表示抢到锁（调用方需在 finally 中 {@link #release}）；Redis 不可用时返回 false（视为未加锁，直接放行）。
+     */
+    public boolean tryAcquire(String key, long ttlSeconds) {
+        try {
+            return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, "1", Duration.ofSeconds(ttlSeconds)));
+        } catch (Exception e) {
+            log.warn("Redis 加锁失败，降级为无锁执行：{}", e.getMessage());
+            return false;
+        }
+    }
+
+    /** 释放 {@link #tryAcquire} 获取的锁。 */
+    public void release(String key) {
+        safeDelete(key);
+    }
+
     // ==================== 底层安全操作：Redis 不可用一律降级 ====================
 
     private String safeGet(String key) {

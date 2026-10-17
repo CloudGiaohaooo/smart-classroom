@@ -16,7 +16,9 @@ import java.util.concurrent.TimeUnit;
  *
  * 取舍（见 docs/improvement-plan.md Phase 19）：
  * - 账号状态（userMapper.selectById）仍每请求复查，保证「禁用账号即时失效」特性不受缓存影响；
- * - 权限变更（改角色/改权限）最多延迟一个 TTL（默认 300s）生效，属可接受的最终一致。
+ * - 权限变更（改角色/改权限）最多延迟一个 TTL（默认 300s）生效，属可接受的最终一致；
+ * - 当前系统暂无角色/权限变更端点（UserController 仅只读），故该延迟是潜在而非活缺陷——evict() 预留给
+ *   未来「改角色/改权限」端点调用；且粗粒度角色写死在 JWT 声明里，本就需重新登录才生效。
  *
  * TTL 外置可调（permission-cache.ttl），不硬编码魔法值。
  */
