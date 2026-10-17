@@ -1,10 +1,19 @@
 import { defineStore } from 'pinia'
 import { login as loginApi, getMe } from '../api'
 
+// 安全读取 localStorage 用户信息（损坏/被篡改时不抛异常，避免白屏）
+const safeParse = (str) => {
+  try {
+    return JSON.parse(str || 'null')
+  } catch (e) {
+    return null
+  }
+}
+
 export const useUserStore = defineStore('user', {
   state: () => ({
     token: localStorage.getItem('token') || '',
-    user: JSON.parse(localStorage.getItem('user') || 'null')
+    user: safeParse(localStorage.getItem('user'))
   }),
   getters: {
     isLogin: (state) => !!state.token,

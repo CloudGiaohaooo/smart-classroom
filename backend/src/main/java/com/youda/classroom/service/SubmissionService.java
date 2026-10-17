@@ -1,6 +1,5 @@
 package com.youda.classroom.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.youda.classroom.cache.RedisCacheService;
@@ -99,11 +98,4 @@ public class SubmissionService {
         cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
-    /**
-     * 统计某作业未批阅的提交数量（供仪表盘使用）
-     */
-    public long countPending() {
-        return submissionMapper.selectCount(
-                new LambdaQueryWrapper<Submission>().eq(Submission::getStatus, "SUBMITTED"));
-    }
 }

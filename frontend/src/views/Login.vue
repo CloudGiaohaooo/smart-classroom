@@ -41,7 +41,11 @@ const rules = {
 }
 
 const onLogin = async () => {
-  await formRef.value.validate()
+  try {
+    await formRef.value.validate()
+  } catch (e) {
+    return // 校验失败，不继续登录
+  }
   loading.value = true
   try {
     await userStore.login(form)

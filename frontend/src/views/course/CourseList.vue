@@ -66,7 +66,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="onSave">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -85,6 +85,8 @@ const loading = ref(false)
 const dialogVisible = ref(false)
 const formRef = ref()
 const teachers = ref([])
+const saving = ref(false)
+const deleting = ref(false)
 
 const query = reactive({ current: 1, size: 10, keyword: '' })
 const form = reactive({
@@ -125,23 +127,37 @@ const openDialog = (row) => {
 }
 
 const onSave = async () => {
+  if (saving.value) return
   await formRef.value.validate()
-  if (form.id) {
-    await updateCourse(form.id, form)
-    ElMessage.success('修改成功')
-  } else {
-    await createCourse(form)
-    ElMessage.success('新增成功')
+  saving.value = true
+  try {
+    if (form.id) {
+      await updateCourse(form.id, form)
+      ElMessage.success('修改成功')
+    } else {
+      await createCourse(form)
+      ElMessage.success('新增成功')
+    }
+    dialogVisible.value = false
+    load()
+  } finally {
+    saving.value = false
   }
-  dialogVisible.value = false
-  load()
 }
 
 const onDelete = async (row) => {
-  await ElMessageBox.confirm(`确定删除课程「${row.courseName}」吗？`, '提示', { type: 'warning' })
-  await deleteCourse(row.id)
-  ElMessage.success('删除成功')
-  load()
+  if (deleting.value) return
+  deleting.value = true
+  try {
+    await ElMessageBox.confirm(`确定删除课程「${row.courseName}」吗？`, '提示', { type: 'warning' })
+    await deleteCourse(row.id)
+    ElMessage.success('删除成功')
+    load()
+  } catch (e) {
+    // 取消删除：忽略
+  } finally {
+    deleting.value = false
+  }
 }
 
 const onPageChange = (p) => {

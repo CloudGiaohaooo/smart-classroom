@@ -57,6 +57,15 @@ const routes = [
   }
 ]
 
+// 安全读取本地用户角色（localStorage 损坏时不抛异常）
+function getUserRole() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null')?.role
+  } catch (e) {
+    return null
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes
@@ -70,7 +79,7 @@ router.beforeEach((to, from, next) => {
   } else if (!token) {
     next('/login')
   } else {
-    const role = JSON.parse(localStorage.getItem('user') || 'null')?.role
+    const role = getUserRole()
     if (to.meta.roles && !to.meta.roles.includes(role)) {
       next(role === 'STUDENT' ? '/courses' : '/dashboard')
     } else {

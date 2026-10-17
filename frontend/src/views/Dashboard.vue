@@ -149,31 +149,43 @@ const renderTrendChart = () => {
   })
 }
 
+const handleResize = () => {
+  chart?.resize()
+  heatChart?.resize()
+  trendChart?.resize()
+}
+
 onMounted(async () => {
-  stats.value = await getStats()
-  renderCourseChart()
+  try {
+    stats.value = await getStats()
+    renderCourseChart()
+  } catch (e) {
+    // 统计加载失败不阻断页面，仅留空卡片
+  }
   // 学习行为看板为教师端能力，学生不请求（避免无权限报错）
   if (isTeacher.value) {
     behaviorLoading.value = true
     try {
       behavior.value = await getBehaviorDashboard()
+      renderHeatChart()
+      renderTrendChart()
+    } catch (e) {
+      // 行为看板加载失败不阻断页面
     } finally {
       behaviorLoading.value = false
     }
-    renderHeatChart()
-    renderTrendChart()
   }
-  window.addEventListener('resize', () => {
-    chart?.resize()
-    heatChart?.resize()
-    trendChart?.resize()
-  })
+  window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
   chart?.dispose()
   heatChart?.dispose()
   trendChart?.dispose()
+  chart = null
+  heatChart = null
+  trendChart = null
 })
 </script>
 

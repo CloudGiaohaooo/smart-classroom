@@ -38,7 +38,16 @@ request.interceptors.response.use(
     return Promise.reject(new Error(res.message))
   },
   (error) => {
-    ElMessage.error(error.message || '网络异常')
+    // 真实 HTTP 401（如网关/代理返回）：清除登录态并跳转登录页
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      ElMessage.error('登录已过期，请重新登录')
+      router.push('/login')
+      return Promise.reject(error)
+    }
+    const msg = error.response?.data?.message || error.message || '网络异常'
+    ElMessage.error(msg)
     return Promise.reject(error)
   }
 )

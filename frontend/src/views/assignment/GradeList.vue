@@ -100,7 +100,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="onGrade">提交批阅</el-button>
+        <el-button type="primary" :loading="grading" @click="onGrade">提交批阅</el-button>
       </template>
     </el-dialog>
   </div>
@@ -116,6 +116,7 @@ const total = ref(0)
 const loading = ref(false)
 const assignments = ref([])
 const dialogVisible = ref(false)
+const grading = ref(false)
 
 const query = reactive({ current: 1, size: 10, assignmentId: null, status: '' })
 const gradeForm = reactive({
@@ -160,6 +161,7 @@ const loadAssist = async (id) => {
   } catch (e) {
     assist.similar = []
     assist.suggestions = []
+    ElMessage.warning('相似度检测加载失败，可继续批阅')
   } finally {
     assistLoaded.value = true
   }
@@ -170,10 +172,16 @@ const fillFeedback = (text) => {
 }
 
 const onGrade = async () => {
-  await gradeSubmission(gradeForm.id, { score: gradeForm.score, feedback: gradeForm.feedback })
-  ElMessage.success('批阅成功')
-  dialogVisible.value = false
-  load()
+  if (grading.value) return
+  grading.value = true
+  try {
+    await gradeSubmission(gradeForm.id, { score: gradeForm.score, feedback: gradeForm.feedback })
+    ElMessage.success('批阅成功')
+    dialogVisible.value = false
+    load()
+  } finally {
+    grading.value = false
+  }
 }
 
 const onPageChange = (p) => {
