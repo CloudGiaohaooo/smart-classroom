@@ -5,6 +5,7 @@ import com.youda.classroom.annotation.BehaviorLog;
 import com.youda.classroom.common.Result;
 import com.youda.classroom.enums.BehaviorType;
 import com.youda.classroom.service.ResourceService;
+import com.youda.classroom.vo.ResourceUploadVO;
 import com.youda.classroom.vo.ResourceVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,11 +30,11 @@ public class ResourceController {
 
     @PostMapping("/upload")
     @PreAuthorize("hasAuthority('resource:write')")
-    public Result<Void> upload(@RequestParam("courseId") Long courseId,
-                               @RequestParam(value = "resourceType", required = false) String resourceType,
-                               @RequestParam("file") MultipartFile file) {
-        resourceService.upload(courseId, resourceType, file);
-        return Result.success("上传成功", null);
+    public Result<ResourceUploadVO> upload(@RequestParam("courseId") Long courseId,
+                                           @RequestParam(value = "resourceType", required = false) String resourceType,
+                                           @RequestParam("file") MultipartFile file) {
+        ResourceUploadVO vo = resourceService.upload(courseId, resourceType, file);
+        return Result.success(vo.isDeduplicated() ? "秒传成功：相同文件已存在，已复用" : "上传成功", vo);
     }
 
     @GetMapping

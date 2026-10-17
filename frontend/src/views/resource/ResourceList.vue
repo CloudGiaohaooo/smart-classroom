@@ -142,8 +142,13 @@ const onUpload = async () => {
   fd.append('file', uploadForm.file)
   uploading.value = true
   try {
-    await uploadResource(fd)
-    ElMessage.success('上传成功')
+    const res = await uploadResource(fd)
+    // 创新点 C：后端返回 deduplicated=true 时提示秒传去重（相同文件只存一份）
+    if (res && res.deduplicated) {
+      ElMessage.success('秒传成功：相同文件已存在，已复用，无需重复存储')
+    } else {
+      ElMessage.success('上传成功')
+    }
     uploadVisible.value = false
     load()
   } finally {

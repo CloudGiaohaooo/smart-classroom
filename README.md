@@ -120,23 +120,24 @@ npm run dev
 
 1. **智能辅助批阅（创新点 A）**：纯 Java TF-IDF + 余弦相似度做「雷同提交检测」，历史评语频率统计做「一键推荐」，无需大模型、完全离线、阈值外置可调。
 2. **学习预警看板（创新点 B）**：`student_behavior` 表 + `@BehaviorLog` 注解 + AOP 切面**零侵入埋点**，ECharts 展示提交率趋势 / 资源热力 / 预警学生，规则外置到 `application.yml`。
+3. **课程资源 MD5 秒传去重（创新点 C）**：上传时纯 JDK `MessageDigest` 计算文件 MD5，相同文件复用既有物理文件、仅新增元数据（秒传），删除按 `file_url` 引用计数防误删；开关 `resource.dedup-enabled` 外置可调。
 
 ### 工程深度（生产级）
 
-3. **RBAC + Spring Security**：四表权限模型 + JWT 无状态认证 + `@PreAuthorize` 方法级授权，替换原拦截器方案。
-4. **Redis 缓存三策略**：空值缓存（防穿透）/ 互斥锁重建（防击穿）/ 随机 TTL（防雪崩），Redis 宕机自动降级直查 DB。
-5. **可观测与质量**：`@RestControllerAdvice` 统一异常、SpringDoc 接口文档、JUnit + JaCoCo 单测、GitHub Actions CI、Docker Compose 一键部署。
+4. **RBAC + Spring Security**：四表权限模型 + JWT 无状态认证 + `@PreAuthorize` 方法级授权，替换原拦截器方案。
+5. **Redis 缓存三策略**：空值缓存（防穿透）/ 互斥锁重建（防击穿）/ 随机 TTL（防雪崩），Redis 宕机自动降级直查 DB。
+6. **可观测与质量**：`@RestControllerAdvice` 统一异常、SpringDoc 接口文档、JUnit + JaCoCo 单测、GitHub Actions CI、Docker Compose 一键部署。
 
 ### 基础工程
 
-6. **前后端分离 + RESTful**：资源化 URL、HTTP 方法语义、统一 `Result` 响应体。
-7. **多表查询**：课程联表查教师名、作业联表统计提交数、提交记录四表 JOIN，演示 `LEFT JOIN` 与聚合子查询。
-8. **事务管理**：作业批阅使用 `@Transactional`，保证得分/反馈/状态/时间原子更新。
-9. **文件上传**：本地落盘 + 数据库元数据、按课程分目录、唯一文件名避免覆盖。
+7. **前后端分离 + RESTful**：资源化 URL、HTTP 方法语义、统一 `Result` 响应体。
+8. **多表查询**：课程联表查教师名、作业联表统计提交数、提交记录四表 JOIN，演示 `LEFT JOIN` 与聚合子查询。
+9. **事务管理**：作业批阅使用 `@Transactional`，保证得分/反馈/状态/时间原子更新。
+10. **文件上传**：本地落盘 + 数据库元数据、按课程分目录、唯一文件名避免覆盖、MD5 秒传去重（见创新点 C）。
 
 ## 七、后续可扩展方向
 
-- 引入 MinIO 对象存储 + 文件 MD5 秒传去重，替代本地磁盘存储
+- 引入 MinIO 对象存储（内容寻址），替代本地磁盘存储，进一步支撑跨实例去重
 - 消息队列（RocketMQ / RabbitMQ）实现批阅结果异步通知
 - WebSocket 推送预警消息，把「教师主动看」升级为「实时告警」
 - 课程资源全文检索（Elasticsearch）
@@ -156,8 +157,10 @@ npm run dev
 | Phase 4 | 创新点 B：学习预警看板（AOP 埋点 + ECharts 看板） | ✅ |
 | Phase 5 | 部署与测试（Docker 一键起 + 单测覆盖率 + SpringDoc） | ✅ |
 | Phase 6 | 答辩材料沉淀（创新点说明 / 技术问答 / 演示脚本） | ✅ |
+| Phase 7 | 创新点 C：课程资源 MD5 秒传去重（本地去重 + 引用计数删除） | ✅ |
 
-**两个必做创新点**（分别对应实习前端与后端成果）：
+**三个创新点**（A + B 分别对应实习前端与后端成果，C 为工程加分项）：
 
 - **创新点 A · 智能辅助批阅**：轻量 TF-IDF + 余弦相似度做「雷同提交检测」，历史评语关键词检索做「一键推荐」，评分仍走原 `@Transactional` 链路。
 - **创新点 B · 学习预警看板**：`student_behavior` 表 + AOP 切面零侵入埋点，ECharts 展示提交率趋势 / 资源热力 / 预警学生，规则外置到 `application.yml`。
+- **创新点 C · MD5 秒传去重**：上传时纯 JDK `MessageDigest` 计算文件 MD5，相同文件复用既有物理文件（秒传），删除按 `file_url` 引用计数防误删。

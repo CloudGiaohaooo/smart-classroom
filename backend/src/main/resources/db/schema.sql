@@ -39,10 +39,12 @@ CREATE TABLE IF NOT EXISTS `course_resource` (
     `resource_type` VARCHAR(20)  DEFAULT 'OTHER' COMMENT '资源类型：VIDEO/PDF/DOC/PPT/OTHER',
     `file_url`      VARCHAR(500) DEFAULT NULL COMMENT '文件访问路径',
     `file_size`     BIGINT       DEFAULT 0 COMMENT '文件大小（字节）',
+    `file_md5`      VARCHAR(32)  DEFAULT NULL COMMENT '文件MD5（秒传去重标识）',
     `uploader_id`   BIGINT       DEFAULT NULL COMMENT '上传人ID',
     `upload_time`   DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
     PRIMARY KEY (`id`),
-    KEY `idx_course_id` (`course_id`)
+    KEY `idx_course_id` (`course_id`),
+    KEY `idx_file_md5` (`file_md5`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='课程资源表';
 
 CREATE TABLE IF NOT EXISTS `assignment` (

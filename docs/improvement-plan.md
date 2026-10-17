@@ -40,11 +40,13 @@
 - **叙事**：「把'事后统计'变成'事中预警'，埋点通过 AOP 解耦，业务代码零侵入。」
 - **验收**：教师登录可见看板；演示数据触发 ≥2 条预警；埋点切面与业务代码物理分离。
 
-### 创新点 C（加分项）：课程资源「秒传与去重」
-- **方案**：上传前计算 MD5，命中则秒传（仅写元数据），未命中才落盘；结合 MinIO 对象存储。
+### 创新点 C：课程资源「MD5 秒传去重」（Phase 7 已实现）
+- **痛点**：同一课件被不同老师 / 课程反复上传，本地磁盘重复存储浪费空间。
+- **方案**：上传时用纯 JDK `MessageDigest` 计算文件 MD5（32 位十六进制），写入 `course_resource.file_md5`；相同 MD5 已存在时复用既有物理文件、仅新增一条元数据记录（秒传），否则才落盘。删除时按 `file_url` 引用计数，避免误删被多记录共享的物理文件。开关外置到 `application.yml`（`resource.dedup-enabled`）。
 - **叙事**：「解决同一课件被反复上传的存储浪费，MD5 去重是网盘级能力。」
+- **验收**：连续两次上传同一文件，第二次返回 `deduplicated=true` 且物理文件只存在一份；结果通过新增响应字段 `ResourceUploadVO` 返回，原 `/api/resources/upload` 路径与语义不变。
 
-> **取舍建议**：A + B 必做（分别对应实习的前端与后端成果），C 时间允许再做。
+> **取舍说明**：创新点 C 沿用现有本地磁盘存储（按课程分目录），去重粒度为「同 MD5 复用同一物理文件」，未引入 MinIO——避免改动既有存储路径破坏存量资源（硬性约束 6）。后续如需跨实例去重可平滑迁移到 MinIO 内容寻址存储。
 
 ---
 
@@ -98,6 +100,14 @@
 - [x] `答辩材料/部署与演示脚本.md`：一键启动步骤 + 演示动线
 - [x] 更新根 `README.md`「核心亮点」，把创新点提到最前
 
+### Phase 7：创新点 C —— MD5 秒传去重
+- [x] `course_resource` 新增 `file_md5` 列（schema.sql + `SchemaMigrationRunner` 幂等迁移老库）
+- [x] `FileMd5` 工具（纯 JDK `MessageDigest`）+ `ResourceUploadVO` 上传结果
+- [x] `upload()` 计算 MD5、命中复用文件不重复落盘；`delete()` 按 file_url 引用计数防误删
+- [x] 开关 `resource.dedup-enabled` 写入 `application.yml` 带注释
+- [x] 前端上传提示区分「秒传成功 / 上传成功」
+- [x] `FileMd5Test` 单测（RFC 1321 标准向量），`mvn test` 9 测试全绿
+
 ---
 
 ## 4. 硬性约束（执行时严格遵守）
@@ -120,3 +130,4 @@
 - **2026-10-17 · Phase 4 完成（创新点 B：学习预警看板）**：新增 `student_behavior` 埋点表 + `@BehaviorLog` 注解 + `BehaviorLogAspect` 切面（`@AfterReturning` 声明式埋点，登录/看资源/交作业三类事件，与业务代码完全解耦、try/catch 兜底不影响主流程）；新增 `/api/stats/behavior` 看板接口与教师端三个展示区（提交率趋势折线、资源热力柱状、预警列表）。预警阈值外置到 `application.yml`（`warning.*`）。**效果**：实测看板返回近 7 天提交趋势（20 条/天）、3 门课程资源热度、3 名静默 30 天学生预警；登录 demo18 后其「长期未登录」预警实时消失（切面实时写入新登录事件），证明埋点链路与预警规则联调正确，看板数据与 DB 一致。
 - **2026-10-17 · Phase 5 完成（部署与测试）**：新增 `docker-compose.yml`（mysql/redis/backend/frontend 四服务 + 健康检查 + 卷持久化）与前后端多阶段 `Dockerfile`、`nginx.conf`（静态托管 + `/api`、`/files` 反向代理）；接入 `springdoc-openapi`（`OpenApiConfig` 配 JWT Bearer 认证，SecurityConfig 放行 `/swagger-ui`、`/v3/api-docs`）；新增 7 个单测（`TextSimilarityTest` 5 + `BehaviorServiceTest` 2，纯 Mock 无需外部依赖）+ JaCoCo 覆盖率插件。**效果**：`mvn verify` 全绿——7 测试全通过、`smart-classroom-1.0.0.jar` 打包成功；实测 `/v3/api-docs`、`/swagger-ui/index.html` 均 200（含 title 与 bearerAuth）。说明：本机未装 Docker，容器化启动未做本机验证；JaCoCo exec 采集在本机 Windows+中文路径下受路径编码影响（无空格路径可正常产出报告），标准 CI/Linux 环境不受影响。
 - **2026-10-17 · Phase 6 完成（答辩材料）**：新增 `答辩材料/` 脱敏公开版三份——`创新点说明.md`（问题—方案—效果三段式 + 答疑要点）、`技术选型问答.md`（RBAC vs 拦截器 / Redis 三问题 / TF-IDF 为何够用 / AOP 埋点优势等 6 问）、`部署与演示脚本.md`（本地与 Docker 两种启动 + 5 步演示动线 + 30 秒电梯陈述）；根 `README.md`「核心亮点」已重构为「差异化创新点 → 工程深度 → 基础工程」三层，创新点提到最前。脱敏用【姓名】【学号】占位；含真实信息的 `答辩材料-原版备份/` 已 gitignore，确认未进入暂存区。
+- **2026-10-17 · Phase 7 完成（创新点 C：MD5 秒传去重）**：`course_resource` 新增 `file_md5` 列（schema.sql + `SchemaMigrationRunner` 幂等迁移老库，information_schema 判存在）；新增纯 JDK `FileMd5`（`MessageDigest`，零外部依赖）与 `ResourceUploadVO`（resourceId/fileMd5/deduplicated/fileUrl）。`upload()` 先算 MD5 再查重，命中则复用既有 `file_url` 不重复落盘，否则落盘；`delete()` 按 `file_url` 引用计数，多条记录共享同一物理文件时保留文件不误删；开关 `resource.dedup-enabled` 外置。前端上传后按 `deduplicated` 区分「秒传成功 / 上传成功」。**效果**：`mvn test` 9 测试全绿（新增 `FileMd5Test` 2 例，对照 RFC 1321 标准向量）；原 `/api/resources/upload` 路径与语义不变，仅扩展响应字段。

@@ -28,6 +28,9 @@ public class CourseResource {
 
     private Long fileSize;
 
+    /** 文件 MD5 值（秒传去重标识，32 位十六进制） */
+    private String fileMd5;
+
     private Long uploaderId;
 
     private LocalDateTime uploadTime;
