@@ -118,3 +118,21 @@ CREATE TABLE IF NOT EXISTS `sys_role_permission` (
     UNIQUE KEY `uk_role_perm` (`role_id`, `permission_id`),
     KEY `idx_permission_id` (`permission_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色-权限关联表';
+
+-- =============================================================
+-- 学习行为埋点表（Phase 4 创新点 B）
+-- 说明：由 BehaviorLogAspect 切面写入，业务代码仅需 @BehaviorLog 注解；
+--       预警规则阈值外置在 application.yml（warning.*）。
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS `student_behavior` (
+    `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `student_id`    BIGINT       NOT NULL COMMENT '学生ID（关联 sys_user.id）',
+    `behavior_type` VARCHAR(32)  NOT NULL COMMENT '行为类型：LOGIN/VIEW_RESOURCE/SUBMIT_ASSIGNMENT',
+    `target_id`     BIGINT       DEFAULT NULL COMMENT '目标对象ID：资源->课程ID / 提交->作业ID',
+    `detail`        VARCHAR(100) DEFAULT NULL COMMENT '行为描述',
+    `occur_time`    DATETIME     NOT NULL COMMENT '发生时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_student_time` (`student_id`, `occur_time`),
+    KEY `idx_type_time` (`behavior_type`, `occur_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生行为埋点表';

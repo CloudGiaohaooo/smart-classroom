@@ -37,3 +37,5 @@ export const deleteResource = (id) => request.delete(`/resources/${id}`)
 
 // ============ 统计 ============
 export const getStats = () => request.get('/stats/overview')
+// 学习行为看板（Phase 4 创新点 B）：提交趋势 + 资源热力 + 学习预警
+export const getBehaviorDashboard = () => request.get('/stats/behavior')

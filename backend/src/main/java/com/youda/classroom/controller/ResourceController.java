@@ -1,7 +1,9 @@
 package com.youda.classroom.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.youda.classroom.annotation.BehaviorLog;
 import com.youda.classroom.common.Result;
+import com.youda.classroom.enums.BehaviorType;
 import com.youda.classroom.service.ResourceService;
 import com.youda.classroom.vo.ResourceVO;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class ResourceController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('resource:read')")
+    @BehaviorLog(BehaviorType.VIEW_RESOURCE)
     public Result<IPage<ResourceVO>> page(@RequestParam(defaultValue = "1") long current,
                                           @RequestParam(defaultValue = "10") long size,
                                           @RequestParam(required = false) Long courseId) {

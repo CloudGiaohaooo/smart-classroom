@@ -1,9 +1,11 @@
 package com.youda.classroom.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.youda.classroom.annotation.BehaviorLog;
 import com.youda.classroom.common.Result;
 import com.youda.classroom.dto.GradeDTO;
 import com.youda.classroom.dto.SubmitDTO;
+import com.youda.classroom.enums.BehaviorType;
 import com.youda.classroom.service.GradingAssistService;
 import com.youda.classroom.service.SubmissionService;
 import com.youda.classroom.vo.GradingAssistVO;
@@ -33,6 +35,7 @@ public class SubmissionController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('submission:submit')")
+    @BehaviorLog(BehaviorType.SUBMIT_ASSIGNMENT)
     public Result<Void> submit(@Valid @RequestBody SubmitDTO dto) {
         submissionService.submit(dto);
         return Result.success("提交成功", null);

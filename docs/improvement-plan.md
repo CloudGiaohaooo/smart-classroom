@@ -81,10 +81,10 @@
 - [x] 验收：20 条模拟提交演示聚类；评语推荐命中率可展示；原事务链路未被破坏
 
 ### Phase 4：创新点 B —— 学习预警看板
-- [ ] `student_behavior` 表 + AOP 埋点切面（登录 / 看资源 / 交作业三类事件）
-- [ ] 教师端看板页：ECharts 提交率趋势、资源热力、预警列表
-- [ ] 预警规则外置到 `application.yml`
-- [ ] 验收：演示数据触发预警；埋点切面与业务代码分离；看板数据与 DB 一致
+- [x] `student_behavior` 表 + AOP 埋点切面（登录 / 看资源 / 交作业三类事件）
+- [x] 教师端看板页：ECharts 提交率趋势、资源热力、预警列表
+- [x] 预警规则外置到 `application.yml`
+- [x] 验收：演示数据触发预警；埋点切面与业务代码分离；看板数据与 DB 一致
 
 ### Phase 5：部署与测试
 - [ ] `docker-compose.yml` + Nginx 配置
@@ -117,3 +117,4 @@
 
 - **2026-10-17 · Phase 2 完成**：引入 Spring Security 过滤链替换 JwtInterceptor（保留 JWT 载体与 ThreadLocal 上下文），落地 RBAC 四表（`sys_role`/`sys_permission`/`sys_user_role`/`sys_role_permission`，11 项权限、3 角色）并用 `@PreAuthorize` 做方法级授权；新增 `RedisCacheService` 落地「空值缓存(穿透)/互斥锁重建(击穿)/随机 TTL(雪崩)」三策略，缓存课程列表与看板统计。**效果**：实测学生调用建课/批阅返回 403、教师批阅 200、未登录 401；关闭 Redis 后接口自动降级直查数据库，日志确认不 500。
 - **2026-10-17 · Phase 3 完成（创新点 A：智能辅助批阅）**：新增 `TextSimilarity`（TF-IDF + 余弦，CJK 单字+二元分词，纯 Java 零重依赖）、`GradingAssistService` 与 `/api/submissions/{id}/grading-assist` 接口；批阅页新增「相似提交提示（雷同检测）」与「推荐评语（历史高频，一键填入）」两个区块。幂等初始化器种入 1 演示作业 + 20 名学生 + 20 条「5 簇×4 人」成簇提交 + 9 条已批阅评语。**效果**：实测对同簇提交调用批阅辅助，返回 3 条同簇提交相似度 86.9%~94.3% 且全部标记「疑似雷同」，跨簇文本被阈值过滤；评语推荐命中 3 条（各 count=3、均分 85），原批阅/提交事务链路未受影响。
+- **2026-10-17 · Phase 4 完成（创新点 B：学习预警看板）**：新增 `student_behavior` 埋点表 + `@BehaviorLog` 注解 + `BehaviorLogAspect` 切面（`@AfterReturning` 声明式埋点，登录/看资源/交作业三类事件，与业务代码完全解耦、try/catch 兜底不影响主流程）；新增 `/api/stats/behavior` 看板接口与教师端三个展示区（提交率趋势折线、资源热力柱状、预警列表）。预警阈值外置到 `application.yml`（`warning.*`）。**效果**：实测看板返回近 7 天提交趋势（20 条/天）、3 门课程资源热度、3 名静默 30 天学生预警；登录 demo18 后其「长期未登录」预警实时消失（切面实时写入新登录事件），证明埋点链路与预警规则联调正确，看板数据与 DB 一致。

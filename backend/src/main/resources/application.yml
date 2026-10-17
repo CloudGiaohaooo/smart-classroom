@@ -65,3 +65,10 @@ similarity:
   suspicious-threshold: 0.75   # 疑似雷同阈值，高于此值标记 flagged
   top-n: 10                    # 相似提交最多返回条数
   suggestion-limit: 3          # 推荐评语返回条数
+
+# 学习预警配置（Phase 4 创新点 B：学习行为预警规则外置，阈值可调）
+warning:
+  login-inactive-days: 7   # 超过 N 天未登录 → 触发「长期未登录」预警
+  no-submit-days: 7        # 超过 N 天未提交作业 → 触发「长期未提交作业」预警
+  trend-days: 7            # 提交率趋势统计最近 N 天
+  heat-limit: 10           # 资源访问热力 TopN 课程数

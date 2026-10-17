@@ -1,7 +1,9 @@
 package com.youda.classroom.controller;
 
+import com.youda.classroom.annotation.BehaviorLog;
 import com.youda.classroom.common.Result;
 import com.youda.classroom.dto.LoginDTO;
+import com.youda.classroom.enums.BehaviorType;
 import com.youda.classroom.service.AuthService;
 import com.youda.classroom.service.UserService;
 import com.youda.classroom.vo.LoginVO;
@@ -26,6 +28,7 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/login")
+    @BehaviorLog(BehaviorType.LOGIN)
     public Result<LoginVO> login(@Valid @RequestBody LoginDTO dto) {
         return Result.success("登录成功", authService.login(dto));
     }
