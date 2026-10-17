@@ -6,6 +6,8 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,8 +19,19 @@ import java.util.Date;
  * JWT 工具类：负责 token 的生成与解析。
  * 采用 HS256 对称签名算法，密钥由配置文件注入。
  */
+@Slf4j
 @Component
 public class JwtUtil {
+
+    /** 源码内置的演示密钥：仅用于本地演示，生产环境务必通过 JWT_SECRET 覆盖 */
+    private static final String DEMO_SECRET = "YouDaSmartClassroom2026SecretKey@CQUPT-cyberspace-security";
+
+    @PostConstruct
+    void validateSecret() {
+        if (DEMO_SECRET.equals(secret)) {
+            log.warn("正在使用源码内置的演示 JWT 密钥！生产环境务必通过环境变量 JWT_SECRET 注入强随机密钥");
+        }
+    }
 
     @Value("${jwt.secret}")
     private String secret;

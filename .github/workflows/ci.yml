@@ -1,5 +1,5 @@
-# CI 自动化（Phase 5 补充）：每次 push / PR 自动跑后端单测 + 前端构建
-# 后端 7 个单测为纯 Mock 单测，不依赖 MySQL/Redis，CI 环境可直接跑通。
+# CI 自动化（Phase 5 补充）：每次 push / PR 自动跑后端测试 + 前端构建
+# 后端 27 个测试（单测 + MockMvc 接口集成测试）均为纯 Mock，不依赖 MySQL/Redis，CI 环境可直接跑通。
 name: CI
 
 on:

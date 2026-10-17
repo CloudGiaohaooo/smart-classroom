@@ -154,3 +154,10 @@
   **效果**：`mvn test` 26 测试全绿（新增非法扩展名单测）；前端 `npm run build` 通过；所有公开接口路径与语义不变，改动均为「新增防护 + 内部加固」。
 
   **已知取舍/待办（低优先级未改，避免过度工程）**：① CORS `allowedOriginPatterns("*")` 收敛需结合部署域名（本机 Vite 代理同源，暂不影响）；② 登录接口无限流（需 Redis 限流，演示场景可接受）；③ 上传仍一次性 `getBytes()` 读入内存（受 100MB 上限约束，秒传需整块算 MD5）；④ 登录页演示账号明文为答辩刻意设计；⑤ 初始化器启动期 N+1 与 BCrypt 多实例属一次性开销。
+- **2026-10-17 · Phase 14~16 复审驱动优化（越权 > 数据完整性 > 部署硬化）**：针对复审报告 v2 的「P0-A/P0-B 两条横向越权 + 数据完整性缺口」按「答辩前（半天）」清单落地——
+
+  - **Phase 14（越权修复 · P0-A/P0-B）**：新增 `CourseOwnershipGuard` 统一「课程归属」校验（ADMIN 放行、TEACHER 仅本人课程、其余角色拒绝）；学生查提交在 `SubmissionController#page` 强制 `studentId=本人`，教师查提交在 `SubmissionService#page` 按 `teacher_id` 过滤（`SubmissionMapper` 联表新增 `c.teacher_id` 条件）；批阅/改课/删课/改作业/删作业/传资源/删资源全部接入归属校验；`CourseService.create` 非管理员强制 `teacher_id=本人`（管理员可代建）。**效果**：`mvn test` 27 测试全绿（新增「学生查全站只返回本人」用例），学生读全站、教师跨课程操作两条越权路径封死。
+  - **Phase 15（数据完整性 · P1-1/2/3 + 小问题）**：`CourseService`/`AssignmentService` 弃用 `BeanUtils.copyProperties` 改显式字段拷贝（未传字段不覆盖，修复 `course_name` 被清空 500 / 简介被清空）；`submission` 表加 `UNIQUE KEY (assignment_id, student_id)` + `submit()` 预查重与 `DuplicateKeyException` 兜底（防重复提交）；`GradeDTO.score` 加 `@DecimalMin("0.0")`（拒负分）；`ResourceService` 白名单逐项 trim；`FileDownloadHeaderFilter` 补 `Cache-Control: no-store`；`JwtAuthenticationFilter` 拆分 `JwtException`/`IllegalArgumentException` 与非预期异常（数据库故障不再被伪装成 401）；缓存键收敛到 `CacheKeys` 常量类。**效果**：`mvn test` 27 测试全绿。
+  - **Phase 16（部署硬化 · P0-C + 文档同步）**：`docker-compose.yml` 移除 MySQL/Redis 宿主机端口映射、MySQL 改用专用账号 `youda`（非 root）、Redis 开 `requirepass`，凭据均可环境变量覆盖；`application.yml` 增 `spring.data.redis.password`；`JwtUtil` 启动时校验密钥，命中源码演示密钥即告警。README 路线图补齐 Phase 10~16、CI 注释更正为 27 测试。
+
+  **待办/取舍（诚实记录，属后续演进而非本轮取舍）**：① `submission` 唯一索引对老库不生效（`sql.init=always` 无 Flyway，仅新建库生效），已用应用层预查重兜底，正式迁移建议上 Flyway；② compose 本机未做容器化验证（本机无 Docker/Redis），凭据默认值仍为演示值、生产须覆盖；③ 批阅辅助 `grading-assist` 与 `/files/**` 下载鉴权、权限缓存、Redis 锁 owner 等「两周内」项未做。

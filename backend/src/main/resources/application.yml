@@ -26,6 +26,8 @@ spring:
       # Redis 缓存连接（Phase 2）：Redis 不可用时接口自动降级直查数据库，不会 500
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      # Redis 密码（Phase 16）：生产环境通过 REDIS_PASSWORD 注入；本地无密码时留空即可
+      password: ${REDIS_PASSWORD:}
       timeout: 2000ms
       lettuce:
         pool:
