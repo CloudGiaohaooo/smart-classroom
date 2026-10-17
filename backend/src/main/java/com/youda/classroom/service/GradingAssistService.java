@@ -9,6 +9,7 @@ import com.youda.classroom.entity.User;
 import com.youda.classroom.mapper.AssignmentMapper;
 import com.youda.classroom.mapper.SubmissionMapper;
 import com.youda.classroom.mapper.UserMapper;
+import com.youda.classroom.security.UserContext;
 import com.youda.classroom.util.TextSimilarity;
 import com.youda.classroom.vo.FeedbackSuggestionVO;
 import com.youda.classroom.vo.GradingAssistVO;
@@ -131,9 +132,8 @@ public class GradingAssistService {
         if (suggestions.size() < suggestionLimit) {
             Set<String> existing = suggestions.stream()
                     .map(FeedbackSuggestionVO::getText).collect(Collectors.toSet());
-            List<Submission> gradedAll = submissionMapper.selectList(new LambdaQueryWrapper<Submission>()
-                    .isNotNull(Submission::getFeedback)
-                    .ne(Submission::getFeedback, ""));
+            // 全局补齐限定「本人授课课程」的已批阅提交，防止把其它教师的评语原文泄露给当前教师
+            List<Submission> gradedAll = submissionMapper.selectGradedByTeacher(UserContext.getUserId());
             Map<String, List<Submission>> global = gradedAll.stream()
                     .collect(Collectors.groupingBy(Submission::getFeedback));
             for (Map.Entry<String, List<Submission>> e : sortByCountDesc(global)) {

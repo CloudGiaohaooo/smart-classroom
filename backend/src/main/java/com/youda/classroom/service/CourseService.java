@@ -11,8 +11,10 @@ import com.youda.classroom.common.ResultCode;
 import com.youda.classroom.dto.CourseDTO;
 import com.youda.classroom.entity.Assignment;
 import com.youda.classroom.entity.Course;
+import com.youda.classroom.entity.CourseEnrollment;
 import com.youda.classroom.entity.CourseResource;
 import com.youda.classroom.mapper.AssignmentMapper;
+import com.youda.classroom.mapper.CourseEnrollmentMapper;
 import com.youda.classroom.mapper.CourseMapper;
 import com.youda.classroom.mapper.CourseResourceMapper;
 import com.youda.classroom.security.UserContext;
@@ -33,6 +35,7 @@ public class CourseService {
     private final CourseMapper courseMapper;
     private final AssignmentMapper assignmentMapper;
     private final CourseResourceMapper resourceMapper;
+    private final CourseEnrollmentMapper enrollmentMapper;
     private final RedisCacheService cacheService;
     private final CourseOwnershipGuard ownershipGuard;
 
@@ -127,6 +130,8 @@ public class CourseService {
         if ((assignmentCount != null && assignmentCount > 0) || (resourceCount != null && resourceCount > 0)) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "该课程下存在作业或资源，请先清理后再删除");
         }
+        // 清理该课程的选课记录，避免删除后残留孤儿数据（无作业/资源时才可删除，但可能仍有学生选课）
+        enrollmentMapper.delete(new LambdaQueryWrapper<CourseEnrollment>().eq(CourseEnrollment::getCourseId, id));
         courseMapper.deleteById(id);
         cacheService.evict(CacheKeys.COURSE_LIST);
         cacheService.evict(CacheKeys.STATS_OVERVIEW);

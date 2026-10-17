@@ -1,5 +1,6 @@
 package com.youda.classroom.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.entity.CourseResource;
@@ -25,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -149,5 +152,25 @@ class ResourceServiceTest {
                 "<script>alert(1)</script>".getBytes(StandardCharsets.UTF_8));
         assertThrows(BusinessException.class,
                 () -> resourceService.upload(1L, "OTHER", html));
+    }
+
+    @Test
+    void pageScopesStudentToEnrolledCourses() {
+        when(resourceMapper.selectResourcePage(any(), any(), any())).thenReturn(new Page<>());
+        UserContext.set(new UserContext.CurrentUser(2L, "student", "STUDENT"));
+
+        resourceService.page(1, 10, null);
+
+        // 学生角色必须把本人 userId 作为选课过滤条件传给 Mapper（防横向越权枚举全站资源）
+        verify(resourceMapper).selectResourcePage(any(), isNull(), eq(2L));
+    }
+
+    @Test
+    void pageDoesNotScopeTeacherOrAdmin() {
+        when(resourceMapper.selectResourcePage(any(), any(), any())).thenReturn(new Page<>());
+        // setUp 已设 teacher；教师/管理员不过滤选课，仅透传 courseId
+        resourceService.page(1, 10, 5L);
+
+        verify(resourceMapper).selectResourcePage(any(), eq(5L), isNull());
     }
 }

@@ -24,8 +24,9 @@ public interface CourseResourceMapper extends BaseMapper<CourseResource> {
             "LEFT JOIN sys_user u ON r.uploader_id = u.id " +
             "<where>" +
             "  <if test='courseId != null'> AND r.course_id = #{courseId} </if>" +
+            "  <if test='studentId != null'> AND EXISTS (SELECT 1 FROM course_enrollment ce WHERE ce.course_id = r.course_id AND ce.student_id = #{studentId}) </if>" +
             "</where>" +
             "ORDER BY r.id DESC" +
             "</script>")
-    IPage<ResourceVO> selectResourcePage(Page<?> page, @Param("courseId") Long courseId);
+    IPage<ResourceVO> selectResourcePage(Page<?> page, @Param("courseId") Long courseId, @Param("studentId") Long studentId);
 }

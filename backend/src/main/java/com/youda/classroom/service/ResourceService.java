@@ -142,7 +142,12 @@ public class ResourceService {
      * 分页查询资源（联表带出课程名、上传人姓名）
      */
     public IPage<ResourceVO> page(long current, long size, Long courseId) {
-        IPage<ResourceVO> result = resourceMapper.selectResourcePage(new Page<>(current, size), courseId);
+        // 选课模型：学生只看自己已选修课程的资源，教师/管理员不受限（与课程/作业分页口径一致）
+        Long studentId = null;
+        if ("STUDENT".equals(UserContext.getRole())) {
+            studentId = UserContext.getUserId();
+        }
+        IPage<ResourceVO> result = resourceMapper.selectResourcePage(new Page<>(current, size), courseId, studentId);
         // 下载走签名 URL（Phase 20）：响应中的 fileUrl 附加有效期签名，匿名无法直接下载
         if (result.getRecords() != null) {
             result.getRecords().forEach(r -> {
@@ -203,8 +208,9 @@ public class ResourceService {
             return "未命名资源";
         }
         String cleaned = name.replace('\\', '_').replace('/', '_').replaceAll("[\\p{Cntrl}]", "");
-        if (cleaned.length() > 255) {
-            cleaned = cleaned.substring(0, 255);
+        // 与库表 resource_name VARCHAR(200) 对齐，超长截断避免插入时 Data too long 报 500
+        if (cleaned.length() > 200) {
+            cleaned = cleaned.substring(0, 200);
         }
         return cleaned.trim();
     }

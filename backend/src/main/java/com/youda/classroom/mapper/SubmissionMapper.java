@@ -8,6 +8,8 @@ import com.youda.classroom.vo.SubmissionVO;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 /**
  * 作业提交 Mapper
  */
@@ -38,4 +40,14 @@ public interface SubmissionMapper extends BaseMapper<Submission> {
                                              @Param("studentId") Long studentId,
                                              @Param("status") String status,
                                              @Param("teacherId") Long teacherId);
+
+    /**
+     * 查询某教师授课课程下所有已批阅提交（评语推荐全局补齐用），限定本人课程防跨教师评语泄露
+     */
+    @Select("SELECT s.* FROM submission s " +
+            "JOIN assignment a ON s.assignment_id = a.id " +
+            "JOIN course c ON a.course_id = c.id " +
+            "WHERE c.teacher_id = #{teacherId} " +
+            "  AND s.feedback IS NOT NULL AND s.feedback <> ''")
+    List<Submission> selectGradedByTeacher(@Param("teacherId") Long teacherId);
 }
