@@ -144,3 +144,13 @@
 - **2026-10-17 · Phase 9 完成（MockMvc 补全：批阅 + 课程 RBAC）**：新增 `SubmissionControllerTest`（批阅辅助 `GET /grading-assist`、批阅 `PUT /grade`、提交 `POST` 三类接口的方法级授权）与 `CourseControllerTest`（建课 `POST`、查课 `GET` 的 RBAC）。**效果**：`mvn test` 20 测试全绿（11 MockMvc + 2 FileMd5 + 2 BehaviorService + 5 TextSimilarity）；实测学生访问批阅辅助 / 批阅 / 建课均 403、教师批阅辅助返回 200 且带 `similar[].similarity/flagged` 与 `suggestions[].text`、学生提交/查课 200——RBAC 方法级授权在 HTTP 层全覆盖验证。
 - **2026-10-17 · 创新点 C 测试闭环补齐**：新增 `ResourceServiceTest`（5 例，Mockito + 临时目录），直接验证 `upload()` 的 MD5 去重分支（命中复用 `fileUrl` 不落盘、未命中落盘并持久化 MD5）与 `delete()` 的引用计数删除（有引用保留文件、无引用删除文件），补齐空文件异常分支。至此创新点 C 形成「算法 `FileMd5Test` → 服务 `ResourceServiceTest` → 接口 `ResourceControllerTest`」三层测试闭环。**效果**：`mvn test` 25 测试全绿。
 - **2026-10-17 · 创新点 C 端到端冒烟验证（真实环境可行性）**：在 8081 端口对真实 MySQL + 真实磁盘做全链路冒烟——同一文件连续上传两次，第一次 `deduplicated=false` 并落盘、第二次 `deduplicated=true` 且 `fileUrl`/`fileMd5` 与第一次完全一致，物理文件仅存在一份；随后删除第一条记录时物理文件被保留（第二条仍引用）、删除最后一条后物理文件被清理。**效果**：秒传去重与引用计数删除在真实运行环境全链路验证通过，与三层测试结论一致。
+- **2026-10-17 · Phase 10~13 评审驱动优化（安全 > 正确性 > 前端健壮性）**：对全项目做一轮三轮评审（安全 / 后端正确性 / 前端），合并去重后按「可行性优先」分 4 个 Phase 落地——
+
+  - **Phase 10（安全·配置与认证）**：`application.yml` 的 JWT 密钥/DB 凭据改为环境变量注入（`JWT_SECRET`/`DB_USERNAME`/`DB_PASSWORD`，保留可运行默认值）；`JwtAuthenticationFilter` 增加「复查账号是否存在且未被禁用」——账号禁用/删除后已签发 token 立即失效；`parseToken` 显式校验签名算法 HS256（jjwt 0.11 无 `setAllowedAlgorithms`，改解析后校验 header 算法）；3 个 MockMvc 测试补 `@MockBean UserMapper`。
+  - **Phase 11（安全·上传与下载）**：上传增加扩展名白名单（`resource.allowed-extensions` 外置，拒绝 html/svg/js 等可执行类型）+ 原始文件名清洗（去路径分隔符/控制字符/限长）；新增 `FileDownloadHeaderFilter` 对 `/files/**` 强制 `Content-Disposition: attachment` + `X-Content-Type-Options: nosniff`，与白名单形成纵深防御封死存储型 XSS；补 `mkdirs()`/`delete()` 返回值检查。
+  - **Phase 12（正确性）**：`GlobalExceptionHandler` 补 `MissingServletRequestParameterException`/`MethodArgumentTypeMismatchException`/`MissingServletRequestPartException`（缺参/类型错误由 500 转 400）；删除课程/作业前校验关联数据（存在作业/资源/提交则拒绝），防孤儿记录；各写路径统一 `evict` 看板统计缓存保证「写后即失效」；批阅满分空值兜底防 NPE。
+  - **Phase 13（前端健壮性 + 清理）**：请求拦截补真实 HTTP 401 处理（清登录态跳转）；`localStorage` 解析加 try/catch 防白屏；Dashboard resize 监听随组件销毁移除、图表 dispose 后置空、统计加载容错；课程保存/删除与批阅提交加防双击重复提交锁；移除后端 `countPending()` 死代码。
+
+  **效果**：`mvn test` 26 测试全绿（新增非法扩展名单测）；前端 `npm run build` 通过；所有公开接口路径与语义不变，改动均为「新增防护 + 内部加固」。
+
+  **已知取舍/待办（低优先级未改，避免过度工程）**：① CORS `allowedOriginPatterns("*")` 收敛需结合部署域名（本机 Vite 代理同源，暂不影响）；② 登录接口无限流（需 Redis 限流，演示场景可接受）；③ 上传仍一次性 `getBytes()` 读入内存（受 100MB 上限约束，秒传需整块算 MD5）；④ 登录页演示账号明文为答辩刻意设计；⑤ 初始化器启动期 N+1 与 BCrypt 多实例属一次性开销。
