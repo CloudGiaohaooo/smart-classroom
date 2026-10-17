@@ -93,10 +93,10 @@
 - [x] 验收：新机器 `docker compose up` 后前端可登录、看板可看、批阅可用（配置就绪，本机未装 Docker 未做容器化启动验证）
 
 ### Phase 6：答辩材料沉淀
-- [ ] `答辩材料/创新点说明.md`：每个创新点「问题—方案—效果」三段式 + 对比截图
-- [ ] `答辩材料/技术选型问答.md`：RBAC vs 拦截器、Redis 三问题、TF-IDF 为何够用、AOP 埋点优势
-- [ ] `答辩材料/部署与演示脚本.md`：一键启动步骤 + 演示动线
-- [ ] 更新根 `README.md`「核心亮点」，把创新点提到最前
+- [x] `答辩材料/创新点说明.md`：每个创新点「问题—方案—效果」三段式 + 对比截图
+- [x] `答辩材料/技术选型问答.md`：RBAC vs 拦截器、Redis 三问题、TF-IDF 为何够用、AOP 埋点优势
+- [x] `答辩材料/部署与演示脚本.md`：一键启动步骤 + 演示动线
+- [x] 更新根 `README.md`「核心亮点」，把创新点提到最前
 
 ---
 
@@ -119,3 +119,4 @@
 - **2026-10-17 · Phase 3 完成（创新点 A：智能辅助批阅）**：新增 `TextSimilarity`（TF-IDF + 余弦，CJK 单字+二元分词，纯 Java 零重依赖）、`GradingAssistService` 与 `/api/submissions/{id}/grading-assist` 接口；批阅页新增「相似提交提示（雷同检测）」与「推荐评语（历史高频，一键填入）」两个区块。幂等初始化器种入 1 演示作业 + 20 名学生 + 20 条「5 簇×4 人」成簇提交 + 9 条已批阅评语。**效果**：实测对同簇提交调用批阅辅助，返回 3 条同簇提交相似度 86.9%~94.3% 且全部标记「疑似雷同」，跨簇文本被阈值过滤；评语推荐命中 3 条（各 count=3、均分 85），原批阅/提交事务链路未受影响。
 - **2026-10-17 · Phase 4 完成（创新点 B：学习预警看板）**：新增 `student_behavior` 埋点表 + `@BehaviorLog` 注解 + `BehaviorLogAspect` 切面（`@AfterReturning` 声明式埋点，登录/看资源/交作业三类事件，与业务代码完全解耦、try/catch 兜底不影响主流程）；新增 `/api/stats/behavior` 看板接口与教师端三个展示区（提交率趋势折线、资源热力柱状、预警列表）。预警阈值外置到 `application.yml`（`warning.*`）。**效果**：实测看板返回近 7 天提交趋势（20 条/天）、3 门课程资源热度、3 名静默 30 天学生预警；登录 demo18 后其「长期未登录」预警实时消失（切面实时写入新登录事件），证明埋点链路与预警规则联调正确，看板数据与 DB 一致。
 - **2026-10-17 · Phase 5 完成（部署与测试）**：新增 `docker-compose.yml`（mysql/redis/backend/frontend 四服务 + 健康检查 + 卷持久化）与前后端多阶段 `Dockerfile`、`nginx.conf`（静态托管 + `/api`、`/files` 反向代理）；接入 `springdoc-openapi`（`OpenApiConfig` 配 JWT Bearer 认证，SecurityConfig 放行 `/swagger-ui`、`/v3/api-docs`）；新增 7 个单测（`TextSimilarityTest` 5 + `BehaviorServiceTest` 2，纯 Mock 无需外部依赖）+ JaCoCo 覆盖率插件。**效果**：`mvn verify` 全绿——7 测试全通过、`smart-classroom-1.0.0.jar` 打包成功；实测 `/v3/api-docs`、`/swagger-ui/index.html` 均 200（含 title 与 bearerAuth）。说明：本机未装 Docker，容器化启动未做本机验证；JaCoCo exec 采集在本机 Windows+中文路径下受路径编码影响（无空格路径可正常产出报告），标准 CI/Linux 环境不受影响。
+- **2026-10-17 · Phase 6 完成（答辩材料）**：新增 `答辩材料/` 脱敏公开版三份——`创新点说明.md`（问题—方案—效果三段式 + 答疑要点）、`技术选型问答.md`（RBAC vs 拦截器 / Redis 三问题 / TF-IDF 为何够用 / AOP 埋点优势等 6 问）、`部署与演示脚本.md`（本地与 Docker 两种启动 + 5 步演示动线 + 30 秒电梯陈述）；根 `README.md`「核心亮点」已重构为「差异化创新点 → 工程深度 → 基础工程」三层，创新点提到最前。脱敏用【姓名】【学号】占位；含真实信息的 `答辩材料-原版备份/` 已 gitignore，确认未进入暂存区。
