@@ -61,6 +61,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-youda_redis_2026}
       JWT_SECRET: ${JWT_SECRET:-YouDaSmartClassroom2026SecretKey@CQUPT-cyberspace-security}
+      FILE_SIGN_SECRET: ${FILE_SIGN_SECRET:-YouDaFileDownloadSignSecret2026@CQUPT-cyberspace-security}
       TZ: Asia/Shanghai
     ports:
       - "${BACKEND_PORT:-8080}:8080"

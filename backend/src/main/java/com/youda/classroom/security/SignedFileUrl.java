@@ -17,8 +17,8 @@ import java.util.HexFormat;
  * expires（过期时间戳，秒）与 sign（HMAC-SHA256 签名，覆盖路径），下载过滤器校验签名与时效，
  * 匿名 / 过期 / 篡改的直连下载一律拒绝，同时保持 window.open 可用。
  *
- * 签名密钥复用 jwt.secret（HS256 同一密钥，长度已满足 >= 32 字节），TTL 外置为
- * file.sign-url-ttl，不硬编码魔法值。
+ * 签名密钥使用独立的 file.sign-secret（与 JWT 的 jwt.secret 分离，避免默认 JWT 密钥被用于伪造下载签名），
+ * TTL 外置为 file.sign-url-ttl，不硬编码魔法值。
  */
 @Component
 public class SignedFileUrl {
@@ -26,7 +26,7 @@ public class SignedFileUrl {
     private final byte[] key;
     private final long ttlSeconds;
 
-    public SignedFileUrl(@Value("${jwt.secret}") String secret,
+    public SignedFileUrl(@Value("${file.sign-secret:YouDaFileDownloadSignSecret2026@CQUPT-cyberspace-security}") String secret,
                          @Value("${file.sign-url-ttl:1800}") long ttlSeconds) {
         this.key = secret.getBytes(StandardCharsets.UTF_8);
         this.ttlSeconds = ttlSeconds;
