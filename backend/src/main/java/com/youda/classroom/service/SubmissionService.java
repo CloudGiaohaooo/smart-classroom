@@ -3,6 +3,7 @@ package com.youda.classroom.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
 import com.youda.classroom.dto.GradeDTO;
@@ -29,6 +30,7 @@ public class SubmissionService {
 
     private final SubmissionMapper submissionMapper;
     private final AssignmentMapper assignmentMapper;
+    private final RedisCacheService cacheService;
 
     /**
      * 学生提交作业
@@ -51,6 +53,7 @@ public class SubmissionService {
         submission.setStatus("SUBMITTED");
         submission.setSubmitTime(LocalDateTime.now());
         submissionMapper.insert(submission);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
     /**
@@ -80,7 +83,9 @@ public class SubmissionService {
             throw new BusinessException(ResultCode.NOT_FOUND, "提交记录不存在");
         }
         Assignment assignment = assignmentMapper.selectById(submission.getAssignmentId());
-        BigDecimal total = assignment == null ? new BigDecimal("100") : assignment.getTotalScore();
+        // 防御性兜底：满分字段为空（手动改库等边缘场景）时按默认 100 处理，避免 NPE
+        BigDecimal total = (assignment == null || assignment.getTotalScore() == null)
+                ? new BigDecimal("100") : assignment.getTotalScore();
         // 业务校验：得分不能超过满分
         if (dto.getScore().compareTo(total) > 0) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "得分不能超过满分 " + total);
@@ -91,6 +96,7 @@ public class SubmissionService {
         submission.setStatus("GRADED");
         submission.setGradeTime(LocalDateTime.now());
         submissionMapper.updateById(submission);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.youda.classroom.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -7,9 +8,12 @@ import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
 import com.youda.classroom.dto.CourseDTO;
+import com.youda.classroom.entity.Assignment;
 import com.youda.classroom.entity.Course;
+import com.youda.classroom.entity.CourseResource;
+import com.youda.classroom.mapper.AssignmentMapper;
 import com.youda.classroom.mapper.CourseMapper;
-import com.youda.classroom.security.UserContext;
+import com.youda.classroom.mapper.CourseResourceMapper;
 import com.youda.classroom.vo.CourseVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -29,6 +33,8 @@ public class CourseService {
     private static final String COURSE_LIST_CACHE_KEY = "cache:course:all";
 
     private final CourseMapper courseMapper;
+    private final AssignmentMapper assignmentMapper;
+    private final CourseResourceMapper resourceMapper;
     private final RedisCacheService cacheService;
 
     @Value("${cache.course-list-ttl}")
@@ -56,6 +62,7 @@ public class CourseService {
         course.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         courseMapper.insert(course);
         cacheService.evict(COURSE_LIST_CACHE_KEY);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
     public void update(Long id, CourseDTO dto) {
@@ -66,10 +73,19 @@ public class CourseService {
         BeanUtils.copyProperties(dto, course);
         courseMapper.updateById(course);
         cacheService.evict(COURSE_LIST_CACHE_KEY);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
     public void delete(Long id) {
+        Long assignmentCount = assignmentMapper.selectCount(
+                new LambdaQueryWrapper<Assignment>().eq(Assignment::getCourseId, id));
+        Long resourceCount = resourceMapper.selectCount(
+                new LambdaQueryWrapper<CourseResource>().eq(CourseResource::getCourseId, id));
+        if ((assignmentCount != null && assignmentCount > 0) || (resourceCount != null && resourceCount > 0)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该课程下存在作业或资源，请先清理后再删除");
+        }
         courseMapper.deleteById(id);
         cacheService.evict(COURSE_LIST_CACHE_KEY);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 }

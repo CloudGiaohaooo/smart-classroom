@@ -6,9 +6,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 /**
  * 全局异常处理器：把各类异常统一转换为 Result 结构，避免堆栈信息泄露给前端
@@ -47,6 +50,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public Result<Void> handleAccessDenied(AccessDeniedException e) {
         return Result.fail(ResultCode.FORBIDDEN, "无权限执行该操作");
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public Result<Void> handleMissingParam(MissingServletRequestParameterException e) {
+        return Result.fail(ResultCode.BAD_REQUEST, "缺少必要参数：" + e.getParameterName());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public Result<Void> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        return Result.fail(ResultCode.BAD_REQUEST, "参数类型错误：" + e.getName());
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public Result<Void> handleMissingPart(MissingServletRequestPartException e) {
+        return Result.fail(ResultCode.BAD_REQUEST, "缺少文件上传部件：" + e.getRequestPartName());
     }
 
     @ExceptionHandler(Exception.class)

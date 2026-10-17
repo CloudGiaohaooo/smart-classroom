@@ -1,8 +1,5 @@
 package com.youda.classroom.service;
 
-import com.youda.classroom.entity.Assignment;
-import com.youda.classroom.entity.Course;
-import com.youda.classroom.entity.CourseResource;
 import com.youda.classroom.entity.Submission;
 import com.youda.classroom.entity.User;
 import com.youda.classroom.mapper.AssignmentMapper;
@@ -25,7 +22,7 @@ import org.springframework.stereotype.Service;
 public class StatsService {
 
     /** 看板聚合统计缓存键（热点数据：仪表盘首页频繁读取，涉及多表 COUNT） */
-    private static final String STATS_CACHE_KEY = "cache:stats:overview";
+    public static final String STATS_CACHE_KEY = "cache:stats:overview";
 
     private final CourseMapper courseMapper;
     private final UserMapper userMapper;

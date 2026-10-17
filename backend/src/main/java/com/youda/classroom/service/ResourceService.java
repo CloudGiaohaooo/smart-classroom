@@ -3,6 +3,7 @@ package com.youda.classroom.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
 import com.youda.classroom.entity.CourseResource;
@@ -35,6 +36,7 @@ import java.util.UUID;
 public class ResourceService {
 
     private final CourseResourceMapper resourceMapper;
+    private final RedisCacheService cacheService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -119,6 +121,7 @@ public class ResourceService {
         resource.setUploaderId(UserContext.getUserId());
         resource.setUploadTime(LocalDateTime.now());
         resourceMapper.insert(resource);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
 
         ResourceUploadVO vo = new ResourceUploadVO();
         vo.setResourceId(resource.getId());
@@ -145,6 +148,7 @@ public class ResourceService {
             throw new BusinessException(ResultCode.NOT_FOUND, "资源不存在");
         }
         resourceMapper.deleteById(id);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
         if (StringUtils.hasText(resource.getFileUrl())) {
             Long refCount = resourceMapper.selectCount(new LambdaQueryWrapper<CourseResource>()
                     .eq(CourseResource::getFileUrl, resource.getFileUrl()));

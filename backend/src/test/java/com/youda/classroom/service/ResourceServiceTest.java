@@ -1,5 +1,6 @@
 package com.youda.classroom.service;
 
+import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.entity.CourseResource;
 import com.youda.classroom.mapper.CourseResourceMapper;
@@ -43,7 +44,7 @@ class ResourceServiceTest {
     @BeforeEach
     void setUp() {
         resourceMapper = mock(CourseResourceMapper.class);
-        resourceService = new ResourceService(resourceMapper);
+        resourceService = new ResourceService(resourceMapper, mock(RedisCacheService.class));
         ReflectionTestUtils.setField(resourceService, "uploadDir", tempDir.toString());
         ReflectionTestUtils.setField(resourceService, "accessPrefix", "/files");
         ReflectionTestUtils.setField(resourceService, "dedupEnabled", true);

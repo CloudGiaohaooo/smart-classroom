@@ -1,12 +1,16 @@
 package com.youda.classroom.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
 import com.youda.classroom.dto.AssignmentDTO;
 import com.youda.classroom.entity.Assignment;
+import com.youda.classroom.entity.Submission;
 import com.youda.classroom.mapper.AssignmentMapper;
+import com.youda.classroom.mapper.SubmissionMapper;
 import com.youda.classroom.vo.AssignmentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -20,6 +24,8 @@ import org.springframework.stereotype.Service;
 public class AssignmentService {
 
     private final AssignmentMapper assignmentMapper;
+    private final SubmissionMapper submissionMapper;
+    private final RedisCacheService cacheService;
 
     /**
      * 分页查询作业（联表带出课程名、提交数、已批阅数）
@@ -35,6 +41,7 @@ public class AssignmentService {
             assignment.setTotalScore(new java.math.BigDecimal("100"));
         }
         assignmentMapper.insert(assignment);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
     public void update(Long id, AssignmentDTO dto) {
@@ -44,9 +51,16 @@ public class AssignmentService {
         }
         BeanUtils.copyProperties(dto, assignment);
         assignmentMapper.updateById(assignment);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 
     public void delete(Long id) {
+        Long subCount = submissionMapper.selectCount(
+                new LambdaQueryWrapper<Submission>().eq(Submission::getAssignmentId, id));
+        if (subCount != null && subCount > 0) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "该作业下存在 " + subCount + " 条提交记录，请先处理后再删除");
+        }
         assignmentMapper.deleteById(id);
+        cacheService.evict(StatsService.STATS_CACHE_KEY);
     }
 }
