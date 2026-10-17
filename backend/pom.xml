@@ -24,6 +24,10 @@
         <springdoc.version>2.5.0</springdoc.version>
         <jacoco.version>0.8.12</jacoco.version>
         <caffeine.version>3.1.8</caffeine.version>
+        <!-- 覆盖 Spring Boot 托管的 testcontainers 版本：Docker Desktop 4.9x 将 Windows 命名管道改为
+             docker_cli「引导重定向」协议，需 testcontainers 2.x 内置的新版 docker-java 才能跟随重定向，
+             否则 Windows 上 Testcontainers 连不上守护进程 -->
+        <testcontainers.version>2.0.5</testcontainers.version>
     </properties>
 
     <dependencies>
@@ -114,6 +118,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers 2.x（复审 v3 本周 #8：真实 MySQL 容器集成测试，隔离可复现；本机无 Docker 时自动跳过） -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mysql</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
