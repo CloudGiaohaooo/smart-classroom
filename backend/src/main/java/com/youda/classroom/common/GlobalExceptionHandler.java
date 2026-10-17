@@ -2,6 +2,7 @@ package com.youda.classroom.common;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -37,6 +38,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public Result<Void> handleMessageNotReadable(HttpMessageNotReadableException e) {
         return Result.fail(ResultCode.BAD_REQUEST, "请求体格式错误");
+    }
+
+    /**
+     * 方法级鉴权失败（@PreAuthorize 抛出 AccessDeniedException）统一转为 403。
+     * 与 URL 级无权限（由 SecurityConfig 的 accessDeniedHandler 处理）保持一致的响应结构。
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public Result<Void> handleAccessDenied(AccessDeniedException e) {
+        return Result.fail(ResultCode.FORBIDDEN, "无权限执行该操作");
     }
 
     @ExceptionHandler(Exception.class)

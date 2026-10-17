@@ -68,10 +68,10 @@
 - [x] 更新 `README.md` 增加「改进路线图」章节
 
 ### Phase 2：权限与缓存
-- [ ] 建 RBAC 四表 + 初始化数据（admin/teacher/student 映射到角色）
-- [ ] 接入 Spring Security，配置 JWT 过滤器，保留 `ThreadLocal` 上下文供业务读取
-- [ ] 接入 Redis，改造课程列表查询与看板聚合查询，落地缓存三策略
-- [ ] 验收：三个演示账号权限隔离正确；Redis 可见缓存键；关 Redis 后接口降级不 500
+- [x] 建 RBAC 四表 + 初始化数据（admin/teacher/student 映射到角色）
+- [x] 接入 Spring Security，配置 JWT 过滤器，保留 `ThreadLocal` 上下文供业务读取
+- [x] 接入 Redis，改造课程列表查询与看板聚合查询，落地缓存三策略
+- [x] 验收：三个演示账号权限隔离正确；Redis 可见缓存键；关 Redis 后接口降级不 500
 
 ### Phase 3：创新点 A —— 智能辅助批阅
 - [ ] 相似度计算工具类（TF-IDF + 余弦，纯 Java，不引重依赖）
@@ -114,3 +114,5 @@
 ## 5. 进度与效果记录
 
 > 每个 Phase / 创新点完成后，在此追加「日期 + 内容 + 效果」条目。
+
+- **2026-10-17 · Phase 2 完成**：引入 Spring Security 过滤链替换 JwtInterceptor（保留 JWT 载体与 ThreadLocal 上下文），落地 RBAC 四表（`sys_role`/`sys_permission`/`sys_user_role`/`sys_role_permission`，11 项权限、3 角色）并用 `@PreAuthorize` 做方法级授权；新增 `RedisCacheService` 落地「空值缓存(穿透)/互斥锁重建(击穿)/随机 TTL(雪崩)」三策略，缓存课程列表与看板统计。**效果**：实测学生调用建课/批阅返回 403、教师批阅 200、未登录 401；关闭 Redis 后接口自动降级直查数据库，日志确认不 500。

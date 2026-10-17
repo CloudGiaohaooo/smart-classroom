@@ -8,6 +8,7 @@ import com.youda.classroom.service.CourseService;
 import com.youda.classroom.vo.CourseVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +32,7 @@ public class CourseController {
     private final CourseService courseService;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('course:read')")
     public Result<IPage<CourseVO>> page(@RequestParam(defaultValue = "1") long current,
                                         @RequestParam(defaultValue = "10") long size,
                                         @RequestParam(required = false) String keyword,
@@ -39,23 +41,27 @@ public class CourseController {
     }
 
     @GetMapping("/all")
+    @PreAuthorize("hasAuthority('course:read')")
     public Result<List<Course>> all() {
         return Result.success(courseService.listAll());
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('course:write')")
     public Result<Void> create(@Valid @RequestBody CourseDTO dto) {
         courseService.create(dto);
         return Result.success();
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('course:write')")
     public Result<Void> update(@PathVariable Long id, @Valid @RequestBody CourseDTO dto) {
         courseService.update(id, dto);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('course:write')")
     public Result<Void> delete(@PathVariable Long id) {
         courseService.delete(id);
         return Result.success();

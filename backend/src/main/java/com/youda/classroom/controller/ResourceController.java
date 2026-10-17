@@ -5,6 +5,7 @@ import com.youda.classroom.common.Result;
 import com.youda.classroom.service.ResourceService;
 import com.youda.classroom.vo.ResourceVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,7 @@ public class ResourceController {
     private final ResourceService resourceService;
 
     @PostMapping("/upload")
+    @PreAuthorize("hasAuthority('resource:write')")
     public Result<Void> upload(@RequestParam("courseId") Long courseId,
                                @RequestParam(value = "resourceType", required = false) String resourceType,
                                @RequestParam("file") MultipartFile file) {
@@ -33,6 +35,7 @@ public class ResourceController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('resource:read')")
     public Result<IPage<ResourceVO>> page(@RequestParam(defaultValue = "1") long current,
                                           @RequestParam(defaultValue = "10") long size,
                                           @RequestParam(required = false) Long courseId) {
@@ -40,6 +43,7 @@ public class ResourceController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('resource:write')")
     public Result<Void> delete(@PathVariable Long id) {
         resourceService.delete(id);
         return Result.success();

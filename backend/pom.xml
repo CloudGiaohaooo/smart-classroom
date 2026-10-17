@@ -69,10 +69,16 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- 仅使用 BCrypt 密码加密（不引入完整 Security 过滤链，保持轻量、易演示） -->
+        <!-- Spring Security：完整过滤链 + RBAC 权限模型（Phase 2，替换拦截器鉴权） -->
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Redis 缓存（Phase 2：课程列表 / 看板聚合缓存，落地穿透/击穿/雪崩三策略） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
         <!-- Lombok -->

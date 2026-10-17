@@ -73,3 +73,48 @@ CREATE TABLE IF NOT EXISTS `submission` (
     KEY `idx_assignment_id` (`assignment_id`),
     KEY `idx_student_id` (`student_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='作业提交表';
+
+-- =============================================================
+-- RBAC 权限模型（Phase 2）
+-- 说明：原 sys_user.role 仍保留（JWT 携带、前端菜单过滤用），
+--       RBAC 四表用于后端细粒度授权（Spring Security @PreAuthorize）。
+--       admin/teacher/student 通过 sys_user_role 映射到角色，角色再关联权限。
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS `sys_role` (
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `role_code`   VARCHAR(50)  NOT NULL COMMENT '角色编码：ADMIN/TEACHER/STUDENT',
+    `role_name`   VARCHAR(50)  NOT NULL COMMENT '角色名称',
+    `description` VARCHAR(200) DEFAULT NULL COMMENT '角色描述',
+    `create_time` DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_role_code` (`role_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
+
+CREATE TABLE IF NOT EXISTS `sys_permission` (
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `perm_code`   VARCHAR(100) NOT NULL COMMENT '权限编码，如 course:write',
+    `perm_name`   VARCHAR(100) NOT NULL COMMENT '权限名称',
+    `description` VARCHAR(200) DEFAULT NULL COMMENT '权限描述',
+    `create_time` DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_perm_code` (`perm_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
+
+CREATE TABLE IF NOT EXISTS `sys_user_role` (
+    `id`      BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID（关联 sys_user.id）',
+    `role_id` BIGINT NOT NULL COMMENT '角色ID（关联 sys_role.id）',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_role` (`user_id`, `role_id`),
+    KEY `idx_role_id` (`role_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户-角色关联表';
+
+CREATE TABLE IF NOT EXISTS `sys_role_permission` (
+    `id`            BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `role_id`       BIGINT NOT NULL COMMENT '角色ID（关联 sys_role.id）',
+    `permission_id` BIGINT NOT NULL COMMENT '权限ID（关联 sys_permission.id）',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_role_perm` (`role_id`, `permission_id`),
+    KEY `idx_permission_id` (`permission_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色-权限关联表';

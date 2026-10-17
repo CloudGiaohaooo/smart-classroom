@@ -20,6 +20,17 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
+  data:
+    redis:
+      # Redis 缓存连接（Phase 2）：Redis 不可用时接口自动降级直查数据库，不会 500
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 
 mybatis-plus:
   configuration:
@@ -39,3 +50,11 @@ jwt:
 file:
   upload-dir: ./uploads
   access-prefix: /files
+
+# 缓存配置（Phase 2：Redis 缓存三策略，全部外置可调，避免硬编码魔法值）
+cache:
+  course-list-ttl: 300   # 课程列表缓存基础 TTL（秒）
+  stats-ttl: 60          # 看板聚合统计缓存基础 TTL（秒）
+  null-value-ttl: 30     # 空值缓存 TTL（秒）——防缓存穿透
+  lock-ttl: 5            # 互斥锁 TTL（秒）——防缓存击穿
+  ttl-jitter: 60         # 随机 TTL 抖动上限（秒）——防缓存雪崩
