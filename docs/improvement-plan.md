@@ -108,6 +108,11 @@
 - [x] 前端上传提示区分「秒传成功 / 上传成功」
 - [x] `FileMd5Test` 单测（RFC 1321 标准向量），`mvn test` 9 测试全绿
 
+### Phase 8：MockMvc 接口集成测试
+- [x] `ResourceControllerTest`：`@WebMvcTest` + `@ContextConfiguration` 精确加载「控制器 + 真实 Security 过滤链 + 真实 JwtUtil」，Service 与 RBAC Mapper 用 `@MockBean` 隔离，不依赖 MySQL/Redis
+- [x] 覆盖：未登录 401 / 无写权限 403 / 有权限 200 + 秒传去重响应字段（HTTP 恒 200 + 响应体业务码契约）
+- [x] `mvn test` 13 测试全绿（4 MockMvc + 2 FileMd5 + 2 BehaviorService + 5 TextSimilarity）
+
 ---
 
 ## 4. 硬性约束（执行时严格遵守）
@@ -131,3 +136,4 @@
 - **2026-10-17 · Phase 5 完成（部署与测试）**：新增 `docker-compose.yml`（mysql/redis/backend/frontend 四服务 + 健康检查 + 卷持久化）与前后端多阶段 `Dockerfile`、`nginx.conf`（静态托管 + `/api`、`/files` 反向代理）；接入 `springdoc-openapi`（`OpenApiConfig` 配 JWT Bearer 认证，SecurityConfig 放行 `/swagger-ui`、`/v3/api-docs`）；新增 7 个单测（`TextSimilarityTest` 5 + `BehaviorServiceTest` 2，纯 Mock 无需外部依赖）+ JaCoCo 覆盖率插件。**效果**：`mvn verify` 全绿——7 测试全通过、`smart-classroom-1.0.0.jar` 打包成功；实测 `/v3/api-docs`、`/swagger-ui/index.html` 均 200（含 title 与 bearerAuth）。说明：本机未装 Docker，容器化启动未做本机验证；JaCoCo exec 采集在本机 Windows+中文路径下受路径编码影响（无空格路径可正常产出报告），标准 CI/Linux 环境不受影响。
 - **2026-10-17 · Phase 6 完成（答辩材料）**：新增 `答辩材料/` 脱敏公开版三份——`创新点说明.md`（问题—方案—效果三段式 + 答疑要点）、`技术选型问答.md`（RBAC vs 拦截器 / Redis 三问题 / TF-IDF 为何够用 / AOP 埋点优势等 6 问）、`部署与演示脚本.md`（本地与 Docker 两种启动 + 5 步演示动线 + 30 秒电梯陈述）；根 `README.md`「核心亮点」已重构为「差异化创新点 → 工程深度 → 基础工程」三层，创新点提到最前。脱敏用【姓名】【学号】占位；含真实信息的 `答辩材料-原版备份/` 已 gitignore，确认未进入暂存区。
 - **2026-10-17 · Phase 7 完成（创新点 C：MD5 秒传去重）**：`course_resource` 新增 `file_md5` 列（schema.sql + `SchemaMigrationRunner` 幂等迁移老库，information_schema 判存在）；新增纯 JDK `FileMd5`（`MessageDigest`，零外部依赖）与 `ResourceUploadVO`（resourceId/fileMd5/deduplicated/fileUrl）。`upload()` 先算 MD5 再查重，命中则复用既有 `file_url` 不重复落盘，否则落盘；`delete()` 按 `file_url` 引用计数，多条记录共享同一物理文件时保留文件不误删；开关 `resource.dedup-enabled` 外置。前端上传后按 `deduplicated` 区分「秒传成功 / 上传成功」。**效果**：`mvn test` 9 测试全绿（新增 `FileMd5Test` 2 例，对照 RFC 1321 标准向量）；原 `/api/resources/upload` 路径与语义不变，仅扩展响应字段。
+- **2026-10-17 · Phase 8 完成（MockMvc 接口集成测试）**：新增 `ResourceControllerTest`（`@WebMvcTest` + `@ContextConfiguration` 精确加载 `ResourceController`/`SecurityConfig`/`JwtAuthenticationFilter`/`JwtUtil`，`@MockBean` 隔离 `ResourceService` 与 `PermissionMapper`，不依赖 MySQL/Redis）。**效果**：`mvn test` 13 测试全绿；实测未登录返回业务码 401、学生无 `resource:write` 上传返回 403、教师上传返回 200 且带 `deduplicated=true`/`fileMd5`/「秒传成功」字段——用真实 Security 过滤链 + 真实 JWT 验证了「HTTP 恒 200 + 响应体业务码」既定契约。

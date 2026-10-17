@@ -126,7 +126,7 @@ npm run dev
 
 4. **RBAC + Spring Security**：四表权限模型 + JWT 无状态认证 + `@PreAuthorize` 方法级授权，替换原拦截器方案。
 5. **Redis 缓存三策略**：空值缓存（防穿透）/ 互斥锁重建（防击穿）/ 随机 TTL（防雪崩），Redis 宕机自动降级直查 DB。
-6. **可观测与质量**：`@RestControllerAdvice` 统一异常、SpringDoc 接口文档、JUnit + JaCoCo 单测、GitHub Actions CI、Docker Compose 一键部署。
+6. **可观测与质量**：`@RestControllerAdvice` 统一异常、SpringDoc 接口文档、JUnit 单测 + MockMvc 接口集成测试 + JaCoCo 覆盖率、GitHub Actions CI、Docker Compose 一键部署。
 
 ### 基础工程
 
@@ -158,6 +158,7 @@ npm run dev
 | Phase 5 | 部署与测试（Docker 一键起 + 单测覆盖率 + SpringDoc） | ✅ |
 | Phase 6 | 答辩材料沉淀（创新点说明 / 技术问答 / 演示脚本） | ✅ |
 | Phase 7 | 创新点 C：课程资源 MD5 秒传去重（本地去重 + 引用计数删除） | ✅ |
+| Phase 8 | MockMvc 接口集成测试（真实 Security 过滤链 + JWT，401/403/200 契约） | ✅ |
 
 **三个创新点**（A + B 分别对应实习前端与后端成果，C 为工程加分项）：
 
