@@ -127,3 +127,23 @@ npm run dev
 - 消息队列实现批阅结果异步通知
 - 引入 Redis 缓存热点数据、限流
 - 接口文档自动生成（Knife4j / SpringDoc）
+
+## 八、改进路线图（复试级）
+
+> 完整任务清单、验收标准与进度记录见 [`docs/improvement-plan.md`](docs/improvement-plan.md)。以下为概要。
+
+围绕「智能」与「可信」两个关键词做增量，在不推倒重来的前提下补齐差异性与工程深度：
+
+| 阶段 | 内容 | 状态 |
+| --- | --- | --- |
+| Phase 1 | 基线与文档（`dev` 分支、改进计划、路线图） | ✅ |
+| Phase 2 | 权限与缓存（RBAC 四表 + Spring Security + Redis 三策略） | 🚧 进行中 |
+| Phase 3 | 创新点 A：智能辅助批阅（TF-IDF 雷同检测 + 评语推荐） | ⏳ |
+| Phase 4 | 创新点 B：学习预警看板（AOP 埋点 + ECharts 看板） | ⏳ |
+| Phase 5 | 部署与测试（Docker 一键起 + 单测覆盖率 + SpringDoc） | ⏳ |
+| Phase 6 | 答辩材料沉淀（创新点说明 / 技术问答 / 演示脚本） | ⏳ |
+
+**两个必做创新点**（分别对应实习前端与后端成果）：
+
+- **创新点 A · 智能辅助批阅**：轻量 TF-IDF + 余弦相似度做「雷同提交检测」，历史评语关键词检索做「一键推荐」，评分仍走原 `@Transactional` 链路。
+- **创新点 B · 学习预警看板**：`student_behavior` 表 + AOP 切面零侵入埋点，ECharts 展示提交率趋势 / 资源热力 / 预警学生，规则外置到 `application.yml`。
