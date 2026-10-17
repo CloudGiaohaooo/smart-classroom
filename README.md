@@ -1,5 +1,7 @@
 # 优达智慧课堂教学管理平台
 
+[![CI](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml/badge.svg)](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml)
+
 > 一个前后端分离的在线教学管理平台，覆盖课程管理、作业发布与提交、作业批阅反馈、课程资源上传四大核心模块。
 > 本项目作为软件开发实习的答辩项目，也适合作为考研复试 / 求职的作品展示。
 
