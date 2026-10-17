@@ -53,7 +53,7 @@ Spring Boot 后端
 │     │  ├─ service/            # 业务层
 │     │  ├─ mapper/             # 数据访问层（含多表 JOIN SQL）
 │     │  ├─ entity/ dto/ vo/    # 实体 / 入参 / 出参
-│     │  ├─ security/           # JWT 工具、拦截器、用户上下文
+│     │  ├─ security/           # Spring Security 过滤链 + JWT 工具、用户上下文
 │     │  ├─ config/             # 配置类、演示数据初始化
 │     │  └─ common/             # 统一响应、异常、状态码
 │     └─ resources/

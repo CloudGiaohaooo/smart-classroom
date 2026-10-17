@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
- * 当前登录用户上下文，使用 ThreadLocal 隔离线程，由 JwtInterceptor 写入
+ * 当前登录用户上下文，使用 ThreadLocal 隔离线程，由 JwtAuthenticationFilter 写入
  */
 public class UserContext {
 
