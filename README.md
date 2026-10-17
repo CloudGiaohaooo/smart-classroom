@@ -137,7 +137,18 @@ npm run dev
 9. **事务管理**：作业批阅使用 `@Transactional`，保证得分/反馈/状态/时间原子更新。
 10. **文件上传**：本地落盘 + 数据库元数据、按课程分目录、唯一文件名避免覆盖、MD5 秒传去重（见创新点 C）。
 
-## 七、后续可扩展方向
+## 七、系统截图（界面预览）
+
+| 界面 | 截图 |
+| --- | --- |
+| 登录页 | ![登录页](docs/screenshots/01-login.png) |
+| 学习预警看板（创新点 B） | ![学习预警看板](docs/screenshots/02-dashboard-warning.png) |
+| 智能辅助批阅（创新点 A） | ![智能辅助批阅](docs/screenshots/03-grading-assist.png) |
+| 课程资源（创新点 C） | ![课程资源](docs/screenshots/04-resource-list.png) |
+| 课程管理 | ![课程管理](docs/screenshots/05-course-list.png) |
+| 学生提交（我的提交） | ![学生提交](docs/screenshots/06-student-submission.png) |
+
+## 八、后续可扩展方向
 
 - 引入 MinIO 对象存储（内容寻址），替代本地磁盘存储，进一步支撑跨实例去重
 - 消息队列（RocketMQ / RabbitMQ）实现批阅结果异步通知
@@ -145,7 +156,7 @@ npm run dev
 - 课程资源全文检索（Elasticsearch）
 - Element Plus 按需引入（unplugin-vue-components）进一步压缩 vendor 体积
 
-## 八、改进路线图（复试级）
+## 九、改进路线图（复试级）
 
 > 完整任务清单、验收标准与进度记录见 [`docs/improvement-plan.md`](docs/improvement-plan.md)。以下为概要。
 
