@@ -53,9 +53,15 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import * as echarts from 'echarts'
+// 按需引入 ECharts，避免全量打包（Dashboard chunk 从 ~1MB 降到 ~400KB）
+import * as echarts from 'echarts/core'
+import { BarChart, LineChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import { getStats, getBehaviorDashboard } from '../api'
 import { useUserStore } from '../store/user'
+
+echarts.use([BarChart, LineChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const userStore = useUserStore()
 const isTeacher = computed(() => userStore.isTeacher)
