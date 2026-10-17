@@ -19,9 +19,9 @@
 | 层级 | 技术 |
 | --- | --- |
 | 前端 | Vue 3、Vite、Element Plus、Vue Router、Pinia、Axios、ECharts |
-| 后端 | Spring Boot 3.2、MyBatis-Plus、MySQL 8 |
-| 安全 | JWT 令牌认证、BCrypt 密码加密、拦截器权限校验 |
-| 其他 | RESTful API 设计、统一响应/异常处理、事务管理、文件上传 |
+| 后端 | Spring Boot 3.2、MyBatis-Plus、MySQL 8、Redis、Spring AOP |
+| 安全 | JWT 令牌认证、BCrypt 密码加密、Spring Security 过滤链 + RBAC 权限模型 |
+| 质量 | RESTful API 设计、统一响应/异常处理、事务管理、SpringDoc 接口文档、JUnit 单测、Docker 部署 |
 
 ## 三、系统架构
 
@@ -33,10 +33,13 @@ Spring Boot 后端
   ├─ Controller 层：接收请求、参数校验、返回统一 Result
   ├─ Service 层：业务逻辑、@Transactional 事务控制
   ├─ Mapper 层：MyBatis-Plus BaseMapper + 自定义 SQL（多表 JOIN）
-  └─ MySQL 数据库（sys_user / course / assignment / submission / course_resource）
+  └─ MySQL 数据库
+        ├─ 业务表：course / assignment / submission / course_resource
+        ├─ 权限表：sys_user / sys_role / sys_permission / sys_user_role / sys_role_permission
+        └─ 埋点表：student_behavior（学习预警）
 ```
 
-安全链路：登录 → 后端校验账号密码（BCrypt 比对）→ 签发 JWT → 前端每次请求携带 `Authorization: Bearer <token>` → 后端 `JwtInterceptor` 解析并写入 `ThreadLocal` 用户上下文。
+安全链路：登录 → 后端校验账号密码（BCrypt 比对）→ 签发 JWT → 前端每次请求携带 `Authorization: Bearer <token>` → 后端 Spring Security 过滤链解析 JWT 并注入用户上下文 → `@PreAuthorize` 方法级授权（RBAC 四表）。
 
 ## 四、目录结构
 
@@ -133,11 +136,11 @@ npm run dev
 
 ## 七、后续可扩展方向
 
-- 引入 Spring Security 完整过滤链 + RBAC 权限模型
-- 分片/对象存储（OSS）替代本地文件存储
-- 消息队列实现批阅结果异步通知
-- 引入 Redis 缓存热点数据、限流
-- 接口文档自动生成（Knife4j / SpringDoc）
+- 引入 MinIO 对象存储 + 文件 MD5 秒传去重，替代本地磁盘存储
+- 消息队列（RocketMQ / RabbitMQ）实现批阅结果异步通知
+- WebSocket 推送预警消息，把「教师主动看」升级为「实时告警」
+- 课程资源全文检索（Elasticsearch）
+- Element Plus 按需引入（unplugin-vue-components）进一步压缩 vendor 体积
 
 ## 八、改进路线图（复试级）
 
