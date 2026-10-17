@@ -182,6 +182,7 @@ npm run dev
 | Phase 16 | 部署硬化：中间件不对外暴露、专用账号 + Redis 密码、JWT 密钥告警 | ✅ |
 | Phase 17 | 复审 v3 收尾：grading-assist 归属校验、孤儿提交 404、显式拷贝补全、老库去重 + 唯一索引迁移 | ✅ |
 | Phase 18 | 选课模型：course_enrollment 表 + 选/退课接口 + 学生只看/交自己选的课（RBAC 扩展） | ✅ |
+| Phase 19 | 权限缓存：Caffeine 本地缓存权限编码，JWT 过滤器每请求 DB 查询减半 | ✅ |
 
 **三个创新点**（A + B 分别对应实习前端与后端成果，C 为工程加分项）：
 

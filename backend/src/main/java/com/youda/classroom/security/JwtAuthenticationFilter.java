@@ -1,5 +1,6 @@
 package com.youda.classroom.security;
 
+import com.youda.classroom.cache.PermissionCacheService;
 import com.youda.classroom.entity.User;
 import com.youda.classroom.mapper.PermissionMapper;
 import com.youda.classroom.mapper.UserMapper;
@@ -38,6 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final PermissionMapper permissionMapper;
     private final UserMapper userMapper;
+    private final PermissionCacheService permissionCache;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -57,9 +59,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     boolean accountActive = user != null && (user.getStatus() == null || user.getStatus() != 0);
 
                     if (accountActive) {
-                        // 从 RBAC 表实时加载权限编码，构建认证对象（权限变更即时生效，无需重发 token）
-                        List<SimpleGrantedAuthority> authorities = permissionMapper
-                                .selectPermCodesByUserId(userId)
+                        // 从 RBAC 表加载权限编码（优先命中 Caffeine 本地缓存，未命中回源 DB 并回填），
+                        // 构建认证对象；权限变更最多延迟一个 TTL 生效（Phase 19）
+                        List<SimpleGrantedAuthority> authorities = loadPermCodes(userId)
                                 .stream().map(SimpleGrantedAuthority::new).toList();
                         UsernamePasswordAuthenticationToken auth =
                                 new UsernamePasswordAuthenticationToken(userId, null, authorities);
@@ -82,6 +84,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 等价于原 JwtInterceptor.afterCompletion：防止线程池复用导致的 ThreadLocal 泄漏
             UserContext.clear();
         }
+    }
+
+    private List<String> loadPermCodes(Long userId) {
+        List<String> cached = permissionCache.get(userId);
+        if (cached != null) {
+            return cached;
+        }
+        List<String> loaded = permissionMapper.selectPermCodesByUserId(userId);
+        permissionCache.put(userId, loaded);
+        return loaded;
     }
 
     private String resolveToken(HttpServletRequest request) {

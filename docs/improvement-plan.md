@@ -179,3 +179,10 @@
   - **演示数据**：`EnrollmentInitializer`（@Order(4)）幂等补齐——student/lisi/wangwu 选全部课程、demo01~20 选第一门课，答辩现场开箱即用。
 
   **效果**：`mvn test` 39 测试全绿（新增 `EnrollmentControllerTest` 5 + `EnrollmentServiceTest` 5 + `SubmissionServiceTest` 2）；选课能力全部走新接口，公开接口路径不变，仅对学生视角做数据级收窄（与 Phase 14 授权收紧同性质）。**已知取舍**：① 选课为「学生自主选课」，教师/管理员代选未做（演示由初始化器直接落库）；② `/api/courses/all` 仍作为选课目录返回课程公开元信息（课程名/教师/学分），未按学生过滤；③ 前端已补选课 API（`enrollCourse`/`unenrollCourse`/`getMyCourses`/`getCourseStudents`），但未重写课程列表为「目录 + 选课」两段式 UI，学生当前列表即为其已选课程。
+- **2026-10-17 · Phase 19 完成（权限缓存：JWT 过滤器每请求 DB 查询减半）**：针对复审 v3「本周」第 2 项（即 2.2 第 5 项「权限缓存」）落地——
+
+  - **本地缓存**：新增 `PermissionCacheService`（`com.youda.classroom.cache`），用 Caffeine 纯内存缓存 `userId -> 权限编码列表`，`maximumSize(10_000)` + `expireAfterWrite`，TTL 由 `application.yml` 的 `permission-cache.ttl`（默认 300 秒）外置可调。
+  - **过滤链改造**：`JwtAuthenticationFilter` 新增 `loadPermCodes()`——先命中缓存，未命中回源 `permissionMapper.selectPermCodesByUserId` 并回填；权限加载由「每请求一次 DB 查询」变为「命中后零 DB 查询」。
+  - **账号状态仍每请求复查**：`userMapper.selectById` 保持每请求校验，因此 Phase 10「禁用账号即时失效」不受缓存影响；只有权限变更（改角色/改权限）最多延迟一个 TTL 生效，属可接受的最终一致。
+
+  **效果**：`mvn test` 42 测试全绿（新增 `PermissionCacheServiceTest` 3：命中/回填/失效/空值安全）；过滤链每个已登录请求的 DB 查询从 2 次降为 1 次（账号状态查 + 权限缓存命中），QPS 提升显著。**已知取舍**：① 权限变更非即时生效（TTL 内旧权限残留），可接受；已预留 `PermissionCacheService.evict()` 供「改角色/改权限」后主动失效（当前管理端无改权限界面，故未接入调用点）；② 缓存为单机本地内存，多实例部署时各实例独立缓存，权限变更会存在实例间短暂不一致（TTL 兜底收敛）；③ Caffeine 为新增依赖（约 1MB 纯内存缓存库，无外部服务），满足「纯本地轻量、无需联网权重」约束。

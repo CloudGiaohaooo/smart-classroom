@@ -1,5 +1,6 @@
 package com.youda.classroom.controller;
 
+import com.youda.classroom.cache.PermissionCacheService;
 import com.youda.classroom.config.SecurityConfig;
 import com.youda.classroom.entity.User;
 import com.youda.classroom.mapper.PermissionMapper;
@@ -18,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,8 +54,13 @@ class CourseControllerTest {
     @MockBean
     private UserMapper userMapper;
 
+    @MockBean
+    private PermissionCacheService permissionCache;
+
     @BeforeEach
     void setUp() {
+        // 权限缓存初始为空（未命中返回 null），JWT 过滤器回源 DB 加载并回填
+        when(permissionCache.get(any())).thenReturn(null);
         // 教师(userId=1)有读+写权限；学生(userId=2)仅读权限
         when(permissionMapper.selectPermCodesByUserId(1L))
                 .thenReturn(List.of("course:read", "course:write"));
