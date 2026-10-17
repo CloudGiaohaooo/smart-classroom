@@ -1,12 +1,16 @@
 # 优达智慧课堂教学管理平台 一键部署（Phase 5，Phase 16 安全加固）
 # 用法：docker compose up -d --build
-# 前端  http://localhost        （Nginx，反向代理 /api、/files 到后端）
-# 后端  http://localhost:8080   （Swagger UI：http://localhost:8080/swagger-ui/index.html）
+# 前端  http://localhost:${FRONTEND_PORT:-80} （Nginx，反向代理 /api、/files 到后端；本机 80 被占用时可用 FRONTEND_PORT=8081 覆盖）
+# 后端  http://localhost:${BACKEND_PORT:-8080} （Swagger UI：http://localhost:${BACKEND_PORT:-8080}/swagger-ui/index.html）
 #
 # 安全说明（Phase 16 / P0-C）：
 #  - MySQL / Redis 不再映射到宿主机端口，仅服务间内部网络可达；
 #  - 数据库使用专用账号 youda（非 root），Redis 开启 requirepass；
 #  - 各类凭据均可通过环境变量覆盖（MYSQL_ROOT_PASSWORD / MYSQL_PASSWORD / REDIS_PASSWORD / JWT_SECRET）。
+
+# 项目名固定：目录名含中文时 compose 无法自动推导 project name，显式指定避免报错
+name: youda-smart-classroom
+
 services:
   mysql:
     image: mysql:8.0
@@ -59,7 +63,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-YouDaSmartClassroom2026SecretKey@CQUPT-cyberspace-security}
       TZ: Asia/Shanghai
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     volumes:
       - uploads-data:/app/uploads
 
@@ -69,7 +73,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-80}:80"
 
 volumes:
   mysql-data:
