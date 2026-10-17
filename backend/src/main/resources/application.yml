@@ -54,6 +54,7 @@ jwt:
 file:
   upload-dir: ./uploads
   access-prefix: /files
+  sign-url-ttl: 1800   # 下载签名 URL 有效期（秒）；/files/** 仅接受带有效签名且未过期的链接（Phase 20 鉴权下载）
 
 # 课程资源秒传去重配置（创新点 C：MD5 秒传去重，外置可调，避免硬编码魔法值）
 resource:

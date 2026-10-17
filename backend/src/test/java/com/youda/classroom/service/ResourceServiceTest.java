@@ -4,6 +4,7 @@ import com.youda.classroom.cache.RedisCacheService;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.entity.CourseResource;
 import com.youda.classroom.mapper.CourseResourceMapper;
+import com.youda.classroom.security.SignedFileUrl;
 import com.youda.classroom.security.UserContext;
 import com.youda.classroom.vo.ResourceUploadVO;
 import org.junit.jupiter.api.AfterEach;
@@ -39,12 +40,16 @@ class ResourceServiceTest {
     Path tempDir;
 
     private CourseResourceMapper resourceMapper;
+    private SignedFileUrl signedFileUrl;
     private ResourceService resourceService;
 
     @BeforeEach
     void setUp() {
         resourceMapper = mock(CourseResourceMapper.class);
-        resourceService = new ResourceService(resourceMapper, mock(RedisCacheService.class), mock(CourseOwnershipGuard.class));
+        // 签名 URL 在 ResourceService 内部处理，单测用「恒等签名」隔离，fileUrl 断言保持不变
+        signedFileUrl = mock(SignedFileUrl.class);
+        when(signedFileUrl.sign(any())).thenAnswer(inv -> inv.getArgument(0, String.class));
+        resourceService = new ResourceService(resourceMapper, mock(RedisCacheService.class), mock(CourseOwnershipGuard.class), signedFileUrl);
         ReflectionTestUtils.setField(resourceService, "uploadDir", tempDir.toString());
         ReflectionTestUtils.setField(resourceService, "accessPrefix", "/files");
         ReflectionTestUtils.setField(resourceService, "dedupEnabled", true);

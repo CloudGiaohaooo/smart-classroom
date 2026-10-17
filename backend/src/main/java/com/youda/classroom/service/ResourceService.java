@@ -9,6 +9,7 @@ import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
 import com.youda.classroom.entity.CourseResource;
 import com.youda.classroom.mapper.CourseResourceMapper;
+import com.youda.classroom.security.SignedFileUrl;
 import com.youda.classroom.security.UserContext;
 import com.youda.classroom.util.FileMd5;
 import com.youda.classroom.vo.ResourceUploadVO;
@@ -22,7 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Locale;
@@ -39,6 +40,7 @@ public class ResourceService {
     private final CourseResourceMapper resourceMapper;
     private final RedisCacheService cacheService;
     private final CourseOwnershipGuard ownershipGuard;
+    private final SignedFileUrl signedFileUrl;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -74,14 +76,13 @@ public class ResourceService {
         }
         originalName = sanitizeFileName(originalName);
 
-        // 1. 一次性读入字节数组，同时用于计算 MD5 与落盘（避免二次读取流）
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
+        // 1. 流式计算 MD5（边读边更新摘要，不把整个文件读入内存，避免大文件 OOM）
+        String md5;
+        try (InputStream in = file.getInputStream()) {
+            md5 = FileMd5.md5Hex(in);
         } catch (IOException e) {
             throw new BusinessException(ResultCode.ERROR, "文件读取失败：" + e.getMessage());
         }
-        String md5 = FileMd5.md5Hex(bytes);
 
         // 2. 秒传去重：命中相同 MD5 则复用已有物理文件，只新增元数据
         CourseResource existing = null;
@@ -105,8 +106,9 @@ public class ResourceService {
                 throw new BusinessException(ResultCode.ERROR, "创建上传目录失败：" + dir.getAbsolutePath());
             }
             File dest = new File(dir, uuidName);
+            // 流式落盘（MultipartFile.transferTo 内部流式拷贝，不一次性读入内存）
             try {
-                Files.write(dest.toPath(), bytes);
+                file.transferTo(dest);
             } catch (IOException e) {
                 throw new BusinessException(ResultCode.ERROR, "文件保存失败：" + e.getMessage());
             }
@@ -131,7 +133,8 @@ public class ResourceService {
         vo.setResourceId(resource.getId());
         vo.setFileMd5(md5);
         vo.setDeduplicated(deduplicated);
-        vo.setFileUrl(fileUrl);
+        // 响应返回带签名与有效期的下载 URL；数据库仍存未签名路径
+        vo.setFileUrl(signedFileUrl.sign(fileUrl));
         return vo;
     }
 
@@ -139,7 +142,16 @@ public class ResourceService {
      * 分页查询资源（联表带出课程名、上传人姓名）
      */
     public IPage<ResourceVO> page(long current, long size, Long courseId) {
-        return resourceMapper.selectResourcePage(new Page<>(current, size), courseId);
+        IPage<ResourceVO> result = resourceMapper.selectResourcePage(new Page<>(current, size), courseId);
+        // 下载走签名 URL（Phase 20）：响应中的 fileUrl 附加有效期签名，匿名无法直接下载
+        if (result.getRecords() != null) {
+            result.getRecords().forEach(r -> {
+                if (StringUtils.hasText(r.getFileUrl())) {
+                    r.setFileUrl(signedFileUrl.sign(r.getFileUrl()));
+                }
+            });
+        }
+        return result;
     }
 
     /**

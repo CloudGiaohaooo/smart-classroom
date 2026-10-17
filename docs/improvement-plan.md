@@ -186,3 +186,10 @@
   - **账号状态仍每请求复查**：`userMapper.selectById` 保持每请求校验，因此 Phase 10「禁用账号即时失效」不受缓存影响；只有权限变更（改角色/改权限）最多延迟一个 TTL 生效，属可接受的最终一致。
 
   **效果**：`mvn test` 42 测试全绿（新增 `PermissionCacheServiceTest` 3：命中/回填/失效/空值安全）；过滤链每个已登录请求的 DB 查询从 2 次降为 1 次（账号状态查 + 权限缓存命中），QPS 提升显著。**已知取舍**：① 权限变更非即时生效（TTL 内旧权限残留），可接受；已预留 `PermissionCacheService.evict()` 供「改角色/改权限」后主动失效（当前管理端无改权限界面，故未接入调用点）；② 缓存为单机本地内存，多实例部署时各实例独立缓存，权限变更会存在实例间短暂不一致（TTL 兜底收敛）；③ Caffeine 为新增依赖（约 1MB 纯内存缓存库，无外部服务），满足「纯本地轻量、无需联网权重」约束。
+- **2026-10-17 · Phase 20 完成（/files/** 鉴权下载 + 流式上传）**：针对复审 v3「本周」第 3 项（即 2.2 第 7 项「/files/** 鉴权下载 + 流式上传」）落地——
+
+  - **签名 URL（鉴权下载）**：新增 `security/SignedFileUrl`——对每个文件路径生成 `?expires=<时间戳>&sign=<HMAC-SHA256>` 签名链接（密钥复用 `jwt.secret`，TTL 外置 `file.sign-url-ttl` 默认 1800s）。前端下载用 `window.open(fileUrl)`，浏览器原生请求无法带 JWT 头，故不用「登录鉴权」而用「签名 URL」：`FileDownloadHeaderFilter` 对 `/files/**` 校验签名与时效，匿名 / 过期 / 篡改的直连下载一律返回业务码 401。
+  - **流式上传**：`FileMd5` 新增 `md5Hex(InputStream)` 边读边更新摘要；`ResourceService.upload` 弃用 `file.getBytes()`（原来最多把 100MB 整文件读进堆内存），改为流式算 MD5 + `file.transferTo(dest)` 流式落盘，大文件上传不再出现内存峰值。
+  - **响应签名**：`ResourceService.page`/`upload` 返回的 `fileUrl` 改为签名 URL，数据库仍存未签名路径（签名随每次响应新鲜生成）。
+
+  **效果**：`mvn test` 50 测试全绿（新增 `SignedFileUrlTest` 3 + `FileDownloadHeaderFilterTest` 4 + `FileMd5Test` 流式 1）；前端零改动（`window.open` 对签名 URL 透明）。**已知取舍**：① 签名 URL 为「按路径 + 时效」鉴权而非「按用户」鉴权——拿到链接的人在有效期内可下载（时间窗内链接可分享），换取前端零改动的兼容性；② 上传从「一次读入」变为「两遍流式读取」（一遍算 MD5、一遍落盘），以磁盘 I/O 换内存安全，属可接受取舍；③ 若需按用户/按选课做细粒度下载鉴权，可后续改为「下载接口 + @PreAuthorize + 流式响应」，本阶段未做。

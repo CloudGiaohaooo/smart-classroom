@@ -2,6 +2,7 @@ package com.youda.classroom.util;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,5 +28,12 @@ class FileMd5Test {
         assertEquals(32, md5.length(), "MD5 应为 32 位");
         assertEquals(md5, FileMd5.md5Hex(data), "相同内容 MD5 应一致");
         assertEquals(md5, md5.toLowerCase(), "应为小写十六进制");
+    }
+
+    @Test
+    void md5HexInputStreamMatchesByteArray() throws Exception {
+        byte[] data = "优达智慧课堂-课程资源-流式上传".getBytes(StandardCharsets.UTF_8);
+        String expected = FileMd5.md5Hex(data);
+        assertEquals(expected, FileMd5.md5Hex(new ByteArrayInputStream(data)), "流式与字节数组结果应一致");
     }
 }
