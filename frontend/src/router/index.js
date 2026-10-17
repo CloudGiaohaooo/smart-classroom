@@ -16,7 +16,8 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('../views/Dashboard.vue'),
-        meta: { title: '数据概览', icon: 'Odometer' }
+        // 数据概览含全站统计 + 学习预警看板，属教师/管理员能力；学生无 stats:read 权限，落地会导致 403
+        meta: { title: '数据概览', icon: 'Odometer', roles: ['TEACHER', 'ADMIN'] }
       },
       {
         path: 'courses',
@@ -61,7 +62,7 @@ const router = createRouter({
   routes
 })
 
-// 全局前置守卫：未登录跳转到登录页
+// 全局前置守卫：未登录跳登录页；已登录按角色拦截越权路由（学生→课程列表，教师/管理员→数据概览）
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   if (to.meta.public) {
@@ -69,7 +70,12 @@ router.beforeEach((to, from, next) => {
   } else if (!token) {
     next('/login')
   } else {
-    next()
+    const role = JSON.parse(localStorage.getItem('user') || 'null')?.role
+    if (to.meta.roles && !to.meta.roles.includes(role)) {
+      next(role === 'STUDENT' ? '/courses' : '/dashboard')
+    } else {
+      next()
+    }
   }
 })
 
