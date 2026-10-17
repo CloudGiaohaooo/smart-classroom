@@ -3,8 +3,10 @@ package com.youda.classroom.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.youda.classroom.common.BusinessException;
 import com.youda.classroom.common.ResultCode;
+import com.youda.classroom.entity.Assignment;
 import com.youda.classroom.entity.Submission;
 import com.youda.classroom.entity.User;
+import com.youda.classroom.mapper.AssignmentMapper;
 import com.youda.classroom.mapper.SubmissionMapper;
 import com.youda.classroom.mapper.UserMapper;
 import com.youda.classroom.util.TextSimilarity;
@@ -41,6 +43,8 @@ public class GradingAssistService {
 
     private final SubmissionMapper submissionMapper;
     private final UserMapper userMapper;
+    private final AssignmentMapper assignmentMapper;
+    private final CourseOwnershipGuard ownershipGuard;
 
     @Value("${similarity.threshold}")
     private double threshold;
@@ -62,6 +66,12 @@ public class GradingAssistService {
         if (target == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "提交记录不存在");
         }
+        // 越权防护：批阅辅助同样受课程归属约束，防止教师读取其它课程的提交摘要/学生姓名/相似度
+        Assignment assignment = assignmentMapper.selectById(target.getAssignmentId());
+        if (assignment == null) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "作业不存在");
+        }
+        ownershipGuard.assertCourseOwned(assignment.getCourseId());
         List<Submission> all = submissionMapper.selectList(new LambdaQueryWrapper<Submission>()
                 .eq(Submission::getAssignmentId, target.getAssignmentId()));
         return new GradingAssistVO(computeSimilar(target, all), suggestFeedback(target, all));

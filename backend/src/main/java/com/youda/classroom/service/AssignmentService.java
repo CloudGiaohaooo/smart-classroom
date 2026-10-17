@@ -59,8 +59,12 @@ public class AssignmentService {
             ownershipGuard.assertCourseOwned(dto.getCourseId());
         }
         // 显式字段拷贝，未传的可选字段不覆盖（修复 BeanUtils 全量拷贝把未传字段清空的问题）
-        assignment.setCourseId(dto.getCourseId());
-        assignment.setTitle(dto.getTitle());
+        if (dto.getCourseId() != null) {
+            assignment.setCourseId(dto.getCourseId());
+        }
+        if (dto.getTitle() != null) {
+            assignment.setTitle(dto.getTitle());
+        }
         if (dto.getContent() != null) {
             assignment.setContent(dto.getContent());
         }

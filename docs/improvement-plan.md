@@ -161,3 +161,12 @@
   - **Phase 16（部署硬化 · P0-C + 文档同步）**：`docker-compose.yml` 移除 MySQL/Redis 宿主机端口映射、MySQL 改用专用账号 `youda`（非 root）、Redis 开 `requirepass`，凭据均可环境变量覆盖；`application.yml` 增 `spring.data.redis.password`；`JwtUtil` 启动时校验密钥，命中源码演示密钥即告警。README 路线图补齐 Phase 10~16、CI 注释更正为 27 测试。
 
   **待办/取舍（诚实记录，属后续演进而非本轮取舍）**：① `submission` 唯一索引对老库不生效（`sql.init=always` 无 Flyway，仅新建库生效），已用应用层预查重兜底，正式迁移建议上 Flyway；② compose 本机未做容器化验证（本机无 Docker/Redis），凭据默认值仍为演示值、生产须覆盖；③ 批阅辅助 `grading-assist` 与 `/files/**` 下载鉴权、权限缓存、Redis 锁 owner 等「两周内」项未做。
+- **2026-10-17 · Phase 17 完成（复审 v3「今天」清单：越权补漏 + 校验补全 + 老库幂等迁移）**：针对复审报告 v3 的 5 条「今天（1–2 小时）」项落地——
+
+  - **补 `grading-assist` 归属校验**：`GradingAssistService.assist()` 先查作业（null 抛 404）再 `ownershipGuard.assertCourseOwned(courseId)`，封死「教师读其它课程提交摘要/学生姓名/相似度」的横向泄露。
+  - **孤儿提交不可批阅**：`SubmissionService.grade()` 将「作业已删除的孤儿提交」由“跳过校验”改为直接 404，避免任意教师对无归属提交打分。
+  - **显式拷贝补全**：`CourseService.update()` 的 `courseName`、`AssignmentService.update()` 的 `courseId/title` 由无条件覆盖改为判 null 才覆盖，消除“部分更新把必填字段置 null → 500”。
+  - **校验补全**：`CourseService.create()` ADMIN 代建课程校验 `teacherId` 非空（400）；`GradeDTO.feedback` 加 `@Size(max=1000)`，超长反馈由写库 500 转为参数校验 400。
+  - **老库幂等迁移**：`SchemaMigrationRunner` 新增 `migrateSubmissionUniqueIndex()`——先按 `(assignment_id, student_id)` 去重（保留最早一条）再 `ADD UNIQUE KEY uk_assignment_student`，用 `information_schema.STATISTICS` 判存在保证幂等；老库从此同样享有数据库层防重复提交。
+
+  **效果**：`mvn test` 27 测试全绿、`mvn compile` 通过；全部为「新增防护 + 内部加固」，公开接口路径与语义不变。**已知取舍**：`GradeDTO.feedback` 上限 1000 与 `schema.sql` 的 `feedback VARCHAR(1000)` 对齐；老库去重 `DELETE` 使用 MySQL 多表删除语法（本系统固定 MySQL 8）。

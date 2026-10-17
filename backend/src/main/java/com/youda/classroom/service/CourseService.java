@@ -64,6 +64,9 @@ public class CourseService {
         course.setSemester(dto.getSemester());
         course.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         // P0-B：授课教师归属——非管理员只能为自己建课，防止教师代建他人课程；管理员可代建（沿用 DTO 的 teacherId）
+        if ("ADMIN".equals(UserContext.getRole()) && dto.getTeacherId() == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "管理员代建课程时必须指定授课教师");
+        }
         course.setTeacherId("ADMIN".equals(UserContext.getRole()) ? dto.getTeacherId() : UserContext.getUserId());
         courseMapper.insert(course);
         cacheService.evict(CacheKeys.COURSE_LIST);
@@ -78,7 +81,9 @@ public class CourseService {
         // P0-B：仅管理员或该课程的授课教师可修改
         ownershipGuard.assertCourseOwned(course);
         // 显式字段拷贝，未传的可选字段不覆盖（修复 BeanUtils 全量拷贝把未传字段清空的问题）
-        course.setCourseName(dto.getCourseName());
+        if (dto.getCourseName() != null) {
+            course.setCourseName(dto.getCourseName());
+        }
         if (dto.getCourseCode() != null) {
             course.setCourseCode(dto.getCourseCode());
         }

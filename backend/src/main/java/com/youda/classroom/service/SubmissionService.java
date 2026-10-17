@@ -107,12 +107,14 @@ public class SubmissionService {
             throw new BusinessException(ResultCode.NOT_FOUND, "提交记录不存在");
         }
         Assignment assignment = assignmentMapper.selectById(submission.getAssignmentId());
-        // P0-B：教师只能批阅自己授课课程下的提交，防止跨课程改分
-        if (assignment != null) {
-            ownershipGuard.assertCourseOwned(assignment.getCourseId());
+        if (assignment == null) {
+            // 作业已被删除的“孤儿提交”不允许批阅，避免任意教师对无归属提交打分
+            throw new BusinessException(ResultCode.NOT_FOUND, "作业不存在，无法批阅");
         }
+        // P0-B：教师只能批阅自己授课课程下的提交，防止跨课程改分
+        ownershipGuard.assertCourseOwned(assignment.getCourseId());
         // 防御性兜底：满分字段为空（手动改库等边缘场景）时按默认 100 处理，避免 NPE
-        BigDecimal total = (assignment == null || assignment.getTotalScore() == null)
+        BigDecimal total = assignment.getTotalScore() == null
                 ? new BigDecimal("100") : assignment.getTotalScore();
         // 业务校验：得分不能超过满分
         if (dto.getScore().compareTo(total) > 0) {
