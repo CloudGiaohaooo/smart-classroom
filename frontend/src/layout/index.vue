@@ -12,10 +12,10 @@
         <el-menu-item
           v-for="item in menus"
           :key="item.path"
-          :index="item.path"
+          :index="'/' + item.path"
         >
-          <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.title }}</span>
+          <el-icon><component :is="item.meta.icon" /></el-icon>
+          <span>{{ item.meta.title }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
