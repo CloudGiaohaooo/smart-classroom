@@ -2,8 +2,54 @@
 
 [![CI](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml/badge.svg)](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml)
 
-> 一个前后端分离的在线教学管理平台，覆盖课程管理、作业发布与提交、作业批阅反馈、课程资源上传四大核心模块。
-> 本项目作为软件开发实习的答辩项目，也适合作为考研复试 / 求职的作品展示。
+> **一句话定位**：一个前后端分离的教学管理平台，覆盖「课程—作业—提交—批阅—资源」完整闭环；主线是**工程规范 + 安全加固**，并在此基础上做了三个**可评估的工程尝试**——智能辅助批阅、学习预警看板、资源 MD5 秒传去重。
+
+## 项目亮点速览（30 秒电梯陈述）
+
+| 亮点 | 一句话 | 证据 |
+| --- | --- | --- |
+| 🔍 智能辅助批阅 | 纯 Java TF-IDF + 余弦做「雷同检测」，历史评语频率统计做「一键推荐」，完全离线 | 100 对标注集 P/R/F1 评测 |
+| 📊 学习预警看板 | `@BehaviorLog` AOP 零侵入埋点 + ECharts 看板 + 外置规则 | 登录后预警实时消失 |
+| ⚡ 资源 MD5 秒传 | 同文件复用物理文件、引用计数删除 | 二次上传 `deduplicated=true` |
+
+### 量化结果（主张—证据，详见 `docs/EVALUATION.md`）
+
+| 维度 | 结果 |
+| --- | --- |
+| 后端测试 | `mvn test` **61 例 0 失败**（含 Testcontainers 真实 MySQL 集成测试，Docker 可用时运行） |
+| 雷同检测 | 阈值 0.45 → P/R/F1 = **1.000/1.000/1.000**；0.75 → 1.000/0.625/0.769 |
+| 登录限流 | 并发 20 → **5 放行 / 15 拦截**（与 `max-attempts=5` 一致） |
+| 读接口性能 | 课程列表 QPS **49.5** / P50 **18ms**（开发机 Docker 环境，下限估计） |
+| CI | 每次 push 自动跑后端测试 + 前端构建（顶部绿徽章） |
+
+### 闭环故事线
+
+```
+学生行为埋点(@BehaviorLog)
+      │  AOP 异步落库（不拖慢业务）
+      ▼
+student_behavior 表 ──聚合──▶ 学习预警看板(ECharts)
+                                    │ 教师发现异常 → 干预
+                                    ▼
+                          作业批阅：雷同检测 + 评语推荐（辅助初筛）
+                                    │
+                                    ▼
+                          评估：P/R/F1 + 压测 QPS（docs/evaluation/）
+```
+
+> 这条数据流是项目的「记忆点」：从**行为埋点**到**预警**到**干预**到**辅助批阅**再到**量化评估**，串起「有主张、有证据、可复现」的完整故事。展开讲解见 `docs/PROBLEM.md` 与 `docs/DESIGN_DECISIONS.md`。
+
+## 文档导航（分层，各取所需）
+
+| 文档 | 目标读者 | 内容 |
+| --- | --- | --- |
+| [`docs/PROBLEM.md`](docs/PROBLEM.md) | 研究生导师 | 三个「可评估工程问题」的问题定义 |
+| [`docs/DESIGN_DECISIONS.md`](docs/DESIGN_DECISIONS.md) | 技术面试官 | 12 条「为什么这么选」的技术决策 + Redis key 设计 |
+| [`docs/EVALUATION.md`](docs/EVALUATION.md) | 导师 + 面试官 | 主张—证据链（雷同 P/R/F1、压测 QPS、测试） |
+| [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) | 导师 | 边界与反思 + 伦理/隐私边界 |
+| [`docs/架构设计.md`](docs/架构设计.md) · [`docs/数据库设计.md`](docs/数据库设计.md) · [`docs/接口文档.md`](docs/接口文档.md) | 面试官 | 架构 / ER / 接口契约（另有 Swagger 在线版） |
+| [`docs/evaluation/`](docs/evaluation/) | 导师 | 原始评测 / 压测报告（可复现） |
+| [`答辩材料/`](答辩材料/) | 本人 | PPT 大纲、演示讲解稿、问答逐字稿、自测清单 |
 
 ## 一、项目简介
 
@@ -72,6 +118,14 @@ Spring Boot 后端
 ```
 
 ## 五、快速启动
+
+### 0. 一键启动（推荐，Docker Compose）
+
+```bash
+docker compose up -d --build
+```
+
+首次启动会自动拉取镜像、建库建表、写入演示数据，拉起 4 个容器（前端 / 后端 / MySQL / Redis），访问 `http://localhost` 即可（端口可用 `FRONTEND_PORT` / `BACKEND_PORT` 环境变量覆盖）。详见 `docker-compose.yml`。
 
 ### 1. 环境准备
 

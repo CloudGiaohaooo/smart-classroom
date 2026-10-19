@@ -2,8 +2,8 @@
   "meta" : {
     "description" : "雷同检测标注集：按构造规则标注真值（duplicate=真雷同/改写，distinct=跨主题非雷同）",
     "label_values" : {
-      "distinct" : "非雷同（跨主题，独立主题）",
-      "duplicate" : "真雷同（逐字复制 / 轻度改写）"
+      "duplicate" : "真雷同（逐字复制 / 轻度改写）",
+      "distinct" : "非雷同（跨主题，独立主题）"
     },
     "total" : 100,
     "limitation" : "合成数据，非真实学生提交；'非雷同'类均为跨主题，区分度偏高。详见 雷同检测评测报告.md"

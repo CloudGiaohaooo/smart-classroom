@@ -93,6 +93,8 @@ public class SecurityConfig {
                 .collect(Collectors.toList()));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        // 暴露 X-Trace-Id 响应头，前端可通过 JS 读取 traceId 做排障上报（Phase 21）
+        config.setExposedHeaders(List.of("X-Trace-Id"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
