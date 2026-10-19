@@ -1,0 +1,7 @@
+# 统一文本换行符约定：
+# Windows 脚本文件强制 CRLF —— 批处理/脚本对 LF-only 换行敏感，
+# 依赖 git config core.autocrlf 会在未开启该配置的机器上产出 LF 的 .bat/.ps1，
+# 可能导致脚本异常。这里显式固定，不依赖本机配置。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
