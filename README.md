@@ -169,6 +169,7 @@ npm run dev
 - **端口占用**：修改 `application.yml` 的 `server.port`，同步修改 `vite.config.js` 的代理 target。
 - **数据库连接失败**：确认 MySQL 已启动、账号密码正确。
 - **Maven 下载慢**：可配置阿里云镜像仓库。
+- **Windows 本地 `npm run build` 报 `Access is denied`（esbuild 临时文件）**：部分安全软件会拦截 esbuild 原生二进制写系统临时目录。改用 `frontend\build-win.bat`（把临时目录重定向到项目内 `.build-tmp`）即可；Linux / CI 不受影响。
 
 ## 六、核心亮点（答辩 / 复试可重点讲解）
 
