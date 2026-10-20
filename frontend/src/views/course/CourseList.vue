@@ -1,5 +1,9 @@
 <template>
   <div class="page-container">
+    <div class="page-header">
+      <h2>课程管理</h2>
+      <div class="page-desc">课程信息分页管理与授课教师联表展示</div>
+    </div>
     <div class="page-toolbar">
       <el-input v-model="query.keyword" placeholder="课程名称/编号" clearable style="width: 220px" @keyup.enter="load" />
       <el-button type="primary" @click="load">查询</el-button>

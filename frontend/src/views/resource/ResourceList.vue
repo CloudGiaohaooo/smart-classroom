@@ -1,5 +1,9 @@
 <template>
   <div class="page-container">
+    <div class="page-header">
+      <h2>课程资源</h2>
+      <div class="page-desc">按课程管理教学资源，支持上传、下载与删除</div>
+    </div>
     <div class="page-toolbar">
       <el-select v-model="query.courseId" placeholder="全部课程" clearable style="width: 220px" @change="load">
         <el-option v-for="c in courses" :key="c.id" :label="c.courseName" :value="c.id" />
@@ -28,7 +32,7 @@
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="download(row)">下载</el-button>
-          <el-button v-if="userStore.isTeacher" link type="danger" @click="onDelete(row)">删除</el-button>
+          <el-button v-if="userStore.isTeacher" link type="danger" :loading="deleting === row.id" @click="onDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -82,7 +86,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getResources, uploadResource, deleteResource, getAllCourses } from '../../api'
+import { getResources, uploadResource, deleteResource, getAllCourses, getMyCourses } from '../../api'
 import { useUserStore } from '../../store/user'
 
 const userStore = useUserStore()
@@ -92,6 +96,7 @@ const loading = ref(false)
 const courses = ref([])
 const uploadVisible = ref(false)
 const uploading = ref(false)
+const deleting = ref(null)
 
 const query = reactive({ current: 1, size: 10, courseId: null })
 const uploadForm = reactive({ courseId: null, resourceType: 'OTHER', file: null })
@@ -108,7 +113,8 @@ const load = async () => {
 }
 
 const loadCourses = async () => {
-  courses.value = await getAllCourses()
+  // 选课模型：学生只显示已选修课程的资源，教师/管理员显示全部
+  courses.value = userStore.isStudent ? await getMyCourses() : await getAllCourses()
 }
 
 const formatSize = (bytes) => {
@@ -163,10 +169,18 @@ const download = (row) => {
 }
 
 const onDelete = async (row) => {
-  await ElMessageBox.confirm(`确定删除资源「${row.resourceName}」吗？`, '提示', { type: 'warning' })
-  await deleteResource(row.id)
-  ElMessage.success('删除成功')
-  load()
+  if (deleting.value) return
+  deleting.value = row.id
+  try {
+    await ElMessageBox.confirm(`确定删除资源「${row.resourceName}」吗？`, '提示', { type: 'warning' })
+    await deleteResource(row.id)
+    ElMessage.success('删除成功')
+    load()
+  } catch (e) {
+    // 取消删除：忽略
+  } finally {
+    deleting.value = null
+  }
 }
 
 const onPageChange = (p) => {

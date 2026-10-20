@@ -21,5 +21,19 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        // 把 element-plus 及其图标拆成独立 chunk，减小主包并利于缓存
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('element-plus') || id.includes('@element-plus')) return 'element-plus'
+            if (id.includes('echarts')) return 'echarts'
+          }
+        }
+      }
+    }
   }
 })

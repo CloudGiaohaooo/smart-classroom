@@ -1,5 +1,9 @@
 <template>
   <div class="page-container">
+    <div class="page-header">
+      <h2>作业批阅</h2>
+      <div class="page-desc">批阅学生提交，智能辅助提供相似检测与评语推荐</div>
+    </div>
     <div class="page-toolbar">
       <el-select v-model="query.assignmentId" placeholder="全部作业" clearable style="width: 260px" @change="load">
         <el-option v-for="a in assignments" :key="a.id" :label="a.title" :value="a.id" />
@@ -27,6 +31,9 @@
         </template>
       </el-table-column>
       <el-table-column prop="score" label="得分" width="80" />
+      <el-table-column prop="content" label="提交内容" min-width="200" show-overflow-tooltip>
+        <template #default="{ row }">{{ row.content || '—' }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="120" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openGrade(row)">{{ row.status === 'GRADED' ? '修改批阅' : '批阅' }}</el-button>
@@ -43,14 +50,20 @@
       @current-change="onPageChange"
     />
 
-    <el-dialog v-model="dialogVisible" title="作业批阅（智能辅助）" width="680px">
-      <el-descriptions :column="2" border style="margin-bottom: 16px">
+    <el-dialog v-model="dialogVisible" title="作业批阅" width="720px">
+      <el-descriptions :column="3" border size="small" style="margin-bottom: 14px">
         <el-descriptions-item label="学生">{{ gradeForm.studentName }}</el-descriptions-item>
         <el-descriptions-item label="作业">{{ gradeForm.assignmentTitle }}</el-descriptions-item>
-        <el-descriptions-item label="提交内容" :span="2">{{ gradeForm.content || '（无）' }}</el-descriptions-item>
+        <el-descriptions-item label="提交时间">{{ formatTime(gradeForm.submitTime) }}</el-descriptions-item>
       </el-descriptions>
 
-      <el-form label-width="80px">
+      <div class="block-title">📋 作业要求</div>
+      <div class="content-box muted">{{ assignmentRequirement || '（未填写作业要求）' }}</div>
+
+      <div class="block-title">📝 学生提交内容</div>
+      <div class="content-box">{{ gradeForm.content || '（学生未填写文本内容）' }}</div>
+
+      <el-form label-width="80px" style="margin-top: 14px">
         <el-form-item label="得分" required>
           <el-input-number v-model="gradeForm.score" :min="0" :max="Number(gradeForm.totalScore) || 100" />
           <span style="margin-left: 8px; color: #999">满分 {{ gradeForm.totalScore }}</span>
@@ -107,7 +120,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getSubmissions, gradeSubmission, getAssignments, getGradingAssist } from '../../api'
 
@@ -120,7 +133,8 @@ const grading = ref(false)
 
 const query = reactive({ current: 1, size: 10, assignmentId: null, status: '' })
 const gradeForm = reactive({
-  id: null, studentName: '', assignmentTitle: '', content: '', score: 0, totalScore: 100, feedback: ''
+  id: null, assignmentId: null, studentName: '', assignmentTitle: '', content: '',
+  submitTime: '', score: 0, totalScore: 100, feedback: ''
 })
 // 批阅辅助：相似提交 + 推荐评语
 const assist = reactive({ similar: [], suggestions: [] })
@@ -142,10 +156,19 @@ const loadAssignments = async () => {
   assignments.value = data.records
 }
 
+// 根据提交所属作业，回查「作业要求」内容，供批阅时对照
+const assignmentRequirement = computed(() => {
+  const a = assignments.value.find((x) => x.id === gradeForm.assignmentId)
+  return a?.content || ''
+})
+
+const formatTime = (t) => (t ? String(t).replace('T', ' ') : '—')
+
 const openGrade = (row) => {
   Object.assign(gradeForm, {
-    id: row.id, studentName: row.studentName, assignmentTitle: row.assignmentTitle,
-    content: row.content, score: Number(row.score) || 0, totalScore: Number(row.totalScore) || 100,
+    id: row.id, assignmentId: row.assignmentId, studentName: row.studentName,
+    assignmentTitle: row.assignmentTitle, content: row.content, submitTime: row.submitTime,
+    score: Number(row.score) || 0, totalScore: Number(row.totalScore) || 100,
     feedback: row.feedback || ''
   })
   dialogVisible.value = true
@@ -196,6 +219,29 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.block-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+  margin: 12px 0 6px;
+}
+.content-box {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  background: #fafbfc;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #303133;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.content-box.muted {
+  color: #606266;
+  background: #f7f8fa;
+}
 .assist-block {
   margin-top: 16px;
   border: 1px solid #ebeef5;

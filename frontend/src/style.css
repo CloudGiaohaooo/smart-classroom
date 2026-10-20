@@ -1,3 +1,21 @@
+:root {
+  /* 主题色：靛蓝（比默认 Element 蓝更沉稳，契合「智慧课堂」） */
+  --brand: #2f54eb;
+  --brand-dark: #1e3aa8;
+  --brand-light: #eef1ff;
+  --bg: #f4f6fb;
+  --card-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+
+  /* 覆盖 Element Plus 主色 */
+  --el-color-primary: #2f54eb;
+  --el-color-primary-light-3: #5a77ef;
+  --el-color-primary-light-5: #8799f3;
+  --el-color-primary-light-7: #b3bdf7;
+  --el-color-primary-light-8: #ccd3fa;
+  --el-color-primary-light-9: #e7eafd;
+  --el-color-primary-dark-2: #2543bc;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -8,11 +26,29 @@ html,
 body,
 #app {
   height: 100%;
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
 }
 
 .page-container {
-  padding: 20px;
+  padding: 20px 24px;
+}
+
+/* 页头（标题 + 说明） */
+.page-header {
+  margin-bottom: 16px;
+}
+.page-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+.page-header .page-desc {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .page-toolbar {
@@ -22,7 +58,25 @@ body,
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
-
 .toolbar-spacer {
   flex: 1;
+}
+
+/* 统一卡片与表格观感 */
+.el-card {
+  border-radius: 10px;
+  border: 1px solid #eef0f4;
+  box-shadow: var(--card-shadow);
+}
+.el-card__header {
+  font-weight: 600;
+  color: #111827;
+}
+.el-table {
+  border-radius: 8px;
+}
+.el-table th.el-table__cell {
+  background: #fafbfd;
+  color: #374151;
+  font-weight: 600;
 }

@@ -1,7 +1,13 @@
 <template>
   <el-container class="layout">
     <el-aside width="220px" class="aside">
-      <div class="logo">优达智慧课堂</div>
+      <div class="logo">
+        <el-icon :size="22"><School /></el-icon>
+        <div class="logo-text">
+          <div class="logo-title">优达智慧课堂</div>
+          <div class="logo-sub">教学管理平台</div>
+        </div>
+      </div>
       <el-menu
         :default-active="$route.path"
         router
@@ -84,38 +90,62 @@ const onCommand = async (command) => {
   height: 100%;
 }
 .aside {
-  background-color: #001529;
+  background: linear-gradient(180deg, #15203c 0%, #001529 100%);
 }
 .logo {
-  height: 60px;
-  line-height: 60px;
-  text-align: center;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   color: #fff;
-  font-size: 18px;
-  font-weight: bold;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.logo .el-icon {
+  color: #6f8bff;
+}
+.logo-text {
+  text-align: left;
+  line-height: 1.2;
+}
+.logo-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.logo-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
 }
 .aside :deep(.el-menu) {
   border-right: none;
+}
+.aside :deep(.el-menu-item.is-active) {
+  background: #2f54eb;
 }
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: #fff;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #eef0f4;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 .header-title {
   font-size: 16px;
   font-weight: 600;
+  color: #111827;
 }
 .user-info {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   cursor: pointer;
   color: #333;
 }
+.user-info .el-icon:first-child {
+  color: #2f54eb;
+}
 .main {
-  background: #f0f2f5;
+  background: var(--bg);
 }
 </style>

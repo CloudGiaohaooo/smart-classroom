@@ -26,6 +26,12 @@ const routes = [
         meta: { title: '课程管理', icon: 'Notebook' }
       },
       {
+        path: 'enrollment',
+        name: 'Enrollment',
+        component: () => import('../views/enrollment/Enrollment.vue'),
+        meta: { title: '选课中心', icon: 'School', roles: ['STUDENT'] }
+      },
+      {
         path: 'assignments',
         name: 'Assignment',
         component: () => import('../views/assignment/AssignmentList.vue'),

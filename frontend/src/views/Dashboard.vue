@@ -3,8 +3,13 @@
     <el-row :gutter="16">
       <el-col v-for="card in cards" :key="card.label" :span="4">
         <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" :style="{ color: card.color }">{{ card.value }}</div>
-          <div class="stat-label">{{ card.label }}</div>
+          <div class="stat-icon" :style="{ background: card.bg, color: card.color }">
+            <el-icon :size="20"><component :is="card.icon" /></el-icon>
+          </div>
+          <div class="stat-meta">
+            <div class="stat-value" :style="{ color: card.color }">{{ card.value }}</div>
+            <div class="stat-label">{{ card.label }}</div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -13,20 +18,23 @@
       <el-col :span="12">
         <el-card shadow="hover">
           <template #header>各课程作业数量分布</template>
-          <div ref="chartRef" style="height: 320px"></div>
+          <div v-if="hasCourseData" ref="chartRef" style="height: 320px"></div>
+          <div v-else class="chart-empty" style="height: 320px">暂无课程作业数据</div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="hover">
           <template #header>各课程资源访问热度（AOP 埋点）</template>
-          <div ref="heatRef" style="height: 320px"></div>
+          <div v-if="hasHeatData" ref="heatRef" style="height: 320px"></div>
+          <div v-else class="chart-empty" style="height: 320px">暂无资源访问数据</div>
         </el-card>
       </el-col>
     </el-row>
 
     <el-card shadow="hover" style="margin-top: 16px" v-if="isTeacher">
       <template #header>近 {{ trendDays }} 天提交量趋势（AOP 埋点）</template>
-      <div ref="trendRef" style="height: 280px"></div>
+      <div v-if="hasTrendData" ref="trendRef" style="height: 280px"></div>
+      <div v-else class="chart-empty" style="height: 280px">暂无提交趋势数据</div>
     </el-card>
 
     <el-card shadow="hover" style="margin-top: 16px" v-if="isTeacher">
@@ -77,18 +85,22 @@ let heatChart = null
 let trendChart = null
 
 const cards = computed(() => [
-  { label: '课程总数', value: stats.value?.courseCount ?? 0, color: '#1677ff' },
-  { label: '教师人数', value: stats.value?.teacherCount ?? 0, color: '#52c41a' },
-  { label: '学生人数', value: stats.value?.studentCount ?? 0, color: '#722ed1' },
-  { label: '作业总数', value: stats.value?.assignmentCount ?? 0, color: '#fa8c16' },
-  { label: '待批阅', value: stats.value?.pendingGradeCount ?? 0, color: '#f5222d' },
-  { label: '课程资源', value: stats.value?.resourceCount ?? 0, color: '#13c2c2' }
+  { label: '课程总数', value: stats.value?.courseCount ?? 0, color: '#2f54eb', bg: '#eef1ff', icon: 'Notebook' },
+  { label: '教师人数', value: stats.value?.teacherCount ?? 0, color: '#389e0d', bg: '#f0fbea', icon: 'User' },
+  { label: '学生人数', value: stats.value?.studentCount ?? 0, color: '#722ed1', bg: '#f6ecfd', icon: 'UserFilled' },
+  { label: '作业总数', value: stats.value?.assignmentCount ?? 0, color: '#d46b08', bg: '#fff5e8', icon: 'Document' },
+  { label: '待批阅', value: stats.value?.pendingGradeCount ?? 0, color: '#cf1322', bg: '#fff0f0', icon: 'EditPen' },
+  { label: '课程资源', value: stats.value?.resourceCount ?? 0, color: '#08979c', bg: '#e6fffb', icon: 'FolderOpened' }
 ])
 
 const warnings = computed(() => behavior.value?.warningList || [])
 const trendDays = computed(() => behavior.value?.submitTrend?.length || 7)
+const hasCourseData = computed(() => (stats.value?.courseAssignmentStats || []).length > 0)
+const hasHeatData = computed(() => (behavior.value?.resourceHeat || []).length > 0)
+const hasTrendData = computed(() => (behavior.value?.submitTrend || []).length > 0)
 
 const renderCourseChart = () => {
+  if (!chartRef.value) return
   const list = stats.value?.courseAssignmentStats || []
   chart = echarts.init(chartRef.value)
   chart.setOption({
@@ -109,6 +121,7 @@ const renderCourseChart = () => {
 }
 
 const renderHeatChart = () => {
+  if (!heatRef.value) return
   const list = behavior.value?.resourceHeat || []
   heatChart = echarts.init(heatRef.value)
   heatChart.setOption({
@@ -129,6 +142,7 @@ const renderHeatChart = () => {
 }
 
 const renderTrendChart = () => {
+  if (!trendRef.value) return
   const list = behavior.value?.submitTrend || []
   trendChart = echarts.init(trendRef.value)
   trendChart.setOption({
@@ -158,7 +172,7 @@ const handleResize = () => {
 onMounted(async () => {
   try {
     stats.value = await getStats()
-    renderCourseChart()
+    if (hasCourseData.value) renderCourseChart()
   } catch (e) {
     // 统计加载失败不阻断页面，仅留空卡片
   }
@@ -167,8 +181,8 @@ onMounted(async () => {
     behaviorLoading.value = true
     try {
       behavior.value = await getBehaviorDashboard()
-      renderHeatChart()
-      renderTrendChart()
+      if (hasHeatData.value) renderHeatChart()
+      if (hasTrendData.value) renderTrendChart()
     } catch (e) {
       // 行为看板加载失败不阻断页面
     } finally {
@@ -190,16 +204,39 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.stat-card {
-  text-align: center;
+.stat-card :deep(.el-card__body) {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px;
+}
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-meta {
+  text-align: left;
 }
 .stat-value {
-  font-size: 30px;
-  font-weight: bold;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 .stat-label {
-  margin-top: 8px;
-  color: #666;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #909399;
   font-size: 13px;
 }
 </style>

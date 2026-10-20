@@ -1,5 +1,9 @@
 <template>
   <div class="page-container">
+    <div class="page-header">
+      <h2>我的提交</h2>
+      <div class="page-desc">查看已提交作业的得分与教师反馈</div>
+    </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="assignmentTitle" label="作业标题" min-width="200" show-overflow-tooltip />
