@@ -1,6 +1,12 @@
 # 优达智慧课堂教学管理平台
 
 [![CI](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml/badge.svg)](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml)
+![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?logo=springboot&logoColor=white)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
 > **一句话定位**：一个前后端分离的教学管理平台，覆盖「课程—作业—提交—批阅—资源」完整闭环；主线是**工程规范 + 安全加固**，并在此基础上做了三个**可评估的工程尝试**——智能辅助批阅、学习预警看板、资源 MD5 秒传去重。
 
