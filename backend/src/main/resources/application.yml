@@ -79,7 +79,7 @@ permission-cache:
 # 智能批阅辅助配置（Phase 3 创新点 A：雷同检测 + 评语推荐，阈值可调）
 similarity:
   threshold: 0.45              # 相似度阈值（余弦 0~1），高于此值才进入「相似提交」列表
-  suspicious-threshold: 0.75   # 疑似雷同阈值，高于此值标记 flagged
+  suspicious-threshold: 0.90   # 疑似雷同阈值，高于此值标记 flagged（演示数据为代码，公共模板使基线较高，故调高以区分跨簇）
   top-n: 10                    # 相似提交最多返回条数
   suggestion-limit: 3          # 推荐评语返回条数
 

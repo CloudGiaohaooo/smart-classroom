@@ -43,17 +43,115 @@ public class SimilarityDemoDataInitializer implements CommandLineRunner {
 
     private static final String DEMO_ASSIGNMENT_TITLE = "实验二：数组与函数（雷同检测演示）";
 
-    /** 5 簇基准文本（簇内几乎相同，簇间主题不同） */
+    /** 5 簇基准代码（簇内几乎相同、簇间算法不同），展示真实作业代码 */
     private static final String[] CLUSTER_BASE = {
-            "本程序使用冒泡排序对整型数组进行升序排列，将排序逻辑封装在 sort 函数中，主函数负责输入输出与调用。时间复杂度为 O(n^2)，空间复杂度为 O(1)。",
-            "本程序使用选择排序对整型数组进行升序排列，每一轮选出未排序部分的最小值放到前面，排序逻辑封装在 sort 函数中。时间复杂度为 O(n^2)。",
-            "本程序使用快速排序对整型数组进行升序排列，采用分治思想，选取基准值后递归划分左右区间，封装在 quickSort 函数中。平均时间复杂度 O(n log n)。",
-            "本程序使用插入排序对整型数组进行升序排列，将元素逐个插入到已排序的合适位置，封装在 insertSort 函数中。时间复杂度 O(n^2)。",
-            "本程序实现了数组排序功能，并对冒泡、选择、快速三种排序算法进行了性能对比分析，附上了运行结果截图与代码说明。"
+            """
+            #include <stdio.h>
+            void sort(int a[], int n) {
+                for (int i = 0; i < n - 1; i++)
+                    for (int j = 0; j < n - 1 - i; j++)
+                        if (a[j] > a[j + 1]) {
+                            int t = a[j];
+                            a[j] = a[j + 1];
+                            a[j + 1] = t;
+                        }
+            }
+            int main() {
+                int a[] = {5, 3, 8, 1, 2}, n = 5;
+                sort(a, n);
+                for (int i = 0; i < n; i++) printf("%d ", a[i]);
+                return 0;
+            }
+            """,
+            """
+            #include <stdio.h>
+            void sort(int a[], int n) {
+                for (int i = 0; i < n - 1; i++) {
+                    int min = i;
+                    for (int j = i + 1; j < n; j++)
+                        if (a[j] < a[min]) min = j;
+                    int t = a[i]; a[i] = a[min]; a[min] = t;
+                }
+            }
+            int main() {
+                int a[] = {5, 3, 8, 1, 2}, n = 5;
+                sort(a, n);
+                for (int i = 0; i < n; i++) printf("%d ", a[i]);
+                return 0;
+            }
+            """,
+            """
+            #include <stdio.h>
+            void swap(int* x, int* y) { int t = *x; *x = *y; *y = t; }
+            void quickSort(int a[], int l, int r) {
+                if (l >= r) return;
+                int p = a[l], i = l, j = r;
+                while (i < j) {
+                    while (i < j && a[j] >= p) j--;
+                    while (i < j && a[i] <= p) i++;
+                    if (i < j) swap(&a[i], &a[j]);
+                }
+                swap(&a[l], &a[i]);
+                quickSort(a, l, i - 1);
+                quickSort(a, i + 1, r);
+            }
+            int main() {
+                int a[] = {5, 3, 8, 1, 2}, n = 5;
+                quickSort(a, 0, n - 1);
+                for (int i = 0; i < n; i++) printf("%d ", a[i]);
+                return 0;
+            }
+            """,
+            """
+            #include <stdio.h>
+            void sort(int a[], int n) {
+                for (int i = 1; i < n; i++) {
+                    int key = a[i], j = i - 1;
+                    while (j >= 0 && a[j] > key) {
+                        a[j + 1] = a[j];
+                        j--;
+                    }
+                    a[j + 1] = key;
+                }
+            }
+            int main() {
+                int a[] = {5, 3, 8, 1, 2}, n = 5;
+                sort(a, n);
+                for (int i = 0; i < n; i++) printf("%d ", a[i]);
+                return 0;
+            }
+            """,
+            """
+            #include <stdio.h>
+            void merge(int a[], int l, int m, int r) {
+                int n1 = m - l + 1, n2 = r - m;
+                int L[n1], R[n2];
+                for (int i = 0; i < n1; i++) L[i] = a[l + i];
+                for (int j = 0; j < n2; j++) R[j] = a[m + 1 + j];
+                int i = 0, j = 0, k = l;
+                while (i < n1 && j < n2) a[k++] = (L[i] <= R[j]) ? L[i++] : R[j++];
+                while (i < n1) a[k++] = L[i++];
+                while (j < n2) a[k++] = R[j++];
+            }
+            void sort(int a[], int l, int r) {
+                if (l < r) {
+                    int m = l + (r - l) / 2;
+                    sort(a, l, m);
+                    sort(a, m + 1, r);
+                    merge(a, l, m, r);
+                }
+            }
+            int main() {
+                int a[] = {5, 3, 8, 1, 2}, n = 5;
+                sort(a, 0, n - 1);
+                for (int i = 0; i < n; i++) printf("%d ", a[i]);
+                return 0;
+            }
+            """
     };
 
-    /** 簇内差异（仅结尾措辞不同，制造高相似度） */
-    private static final String[] TAILS = {"", " 运行结果正确。", " 已通过编译与测试。", " 代码注释完整。"};
+    /** 簇内差异（仅结尾注释不同，制造高相似度） */
+    private static final String[] TAILS = {"", "\n// 运行结果正确", "\n// 已通过编译与测试", "\n// 代码注释完整"};
 
     /** 用于演示评语推荐的 3 种评语（各重复 3 次，共 9 条已批阅提交） */
     private static final String[] FEEDBACKS = {
