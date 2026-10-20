@@ -1,11 +1,28 @@
 # 优达智慧课堂教学管理平台
 
 [![CI](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml/badge.svg)](https://github.com/CloudGiaohaooo/smart-classroom/actions/workflows/ci.yml)
+![GitHub last commit](https://img.shields.io/github/last-commit/CloudGiaohaooo/smart-classroom)
+
+**后端**：
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?logo=springboot&logoColor=white)
-![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring_Security-6.2-6DB33F?logo=springsecurity&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-0.11-000000?logo=jsonwebtokens&logoColor=white)
+![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5-B8332C?logo=mybatis&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+
+**前端**：
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
+![Element Plus](https://img.shields.io/badge/Element_Plus-2.7-409EFF)
+![Pinia](https://img.shields.io/badge/Pinia-2-FFD859?logo=pinia&logoColor=000000)
+![ECharts](https://img.shields.io/badge/ECharts-5-AA344D?logo=echarts&logoColor=white)
+
+**质量与部署**：
+![JUnit](https://img.shields.io/badge/JUnit-5-25A162?logo=junit5&logoColor=white)
+![Testcontainers](https://img.shields.io/badge/Testcontainers-2.0-291A3F?logo=testcontainers&logoColor=white)
+![SpringDoc](https://img.shields.io/badge/SpringDoc-2.5-85EA2D?logo=swagger&logoColor=black)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
 > **一句话定位**：一个前后端分离的教学管理平台，覆盖「课程—作业—提交—批阅—资源」完整闭环；主线是**工程规范 + 安全加固**，并在此基础上做了三个**可评估的工程尝试**——智能辅助批阅、学习预警看板、资源 MD5 秒传去重。
